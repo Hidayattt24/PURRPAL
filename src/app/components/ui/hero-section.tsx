@@ -3,6 +3,7 @@ import Typewriter from "typewriter-effect";
 import { OrbitingCircles } from "./orbiting-circles";
 import { Icons } from "./icons";
 import { motion } from "framer-motion";
+import { SparklesText } from "./sparkles-text";
 
 export const HeroSection = () => {
   return (
@@ -45,14 +46,20 @@ export const HeroSection = () => {
 
       {/* Content */}
       <div className="relative max-w-7xl mx-auto text-center mb-16">
-        <motion.h1 
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-5xl md:text-7xl font-bold mb-6 font-poppins bg-clip-text text-transparent bg-gradient-to-r from-[#FF823C] to-[#C54F0C]"
         >
-          You're not alone. Helping you care for your cat — wherever you are
-        </motion.h1>
+          <SparklesText 
+            className="text-5xl md:text-7xl font-bold mb-6 font-poppins"
+            sparklesColor="#FF823C"
+          >
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF823C] to-[#C54F0C]">
+              You're not alone. Helping you care for your cat — wherever you are
+            </span>
+          </SparklesText>
+        </motion.div>
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
