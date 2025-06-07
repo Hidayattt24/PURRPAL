@@ -10,10 +10,18 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <FloatingDock />
-      <HeroSection />
-      <FeatureSection />
-      <TestimonialSection />
-      <QASection />
+      <section id="home">
+        <HeroSection />
+      </section>
+      <section id="features">
+        <FeatureSection />
+      </section>
+      <section id="testimonials">
+        <TestimonialSection />
+      </section>
+      <section id="faq">
+        <QASection />
+      </section>
     </main>
   );
 }

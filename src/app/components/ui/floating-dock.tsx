@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useScrollTo } from "@/lib/hooks/useScrollTo";
 import {
   IconHome,
   IconStarsFilled,
@@ -23,22 +24,22 @@ const navItems = [
   {
     name: "Home",
     icon: <IconHome className="w-5 h-5 text-[#FF823C]" />,
-    href: "/",
+    href: "home",
   },
   {
     name: "Features",
     icon: <IconStarsFilled className="w-5 h-5 text-[#FF823C]" />,
-    href: "/features",
+    href: "features",
   },
   {
     name: "Testimonials",
     icon: <IconMessageCircle2 className="w-5 h-5 text-[#FF823C]" />,
-    href: "/testimonials",
+    href: "testimonials",
   },
   {
-    name: "QA",
+    name: "FAQ",
     icon: <IconQuestionMark className="w-5 h-5 text-[#FF823C]" />,
-    href: "/qa",
+    href: "faq",
   },
 ];
 
@@ -53,6 +54,13 @@ export const FloatingDock = () => {
 
 const FloatingDockMobile = () => {
   const [open, setOpen] = useState(false);
+  const scrollTo = useScrollTo();
+
+  const handleClick = (href: string) => {
+    setOpen(false);
+    scrollTo(href);
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50 block md:hidden">
       <AnimatePresence>
@@ -78,12 +86,12 @@ const FloatingDockMobile = () => {
                 }}
                 transition={{ delay: (navItems.length - 1 - idx) * 0.05 }}
               >
-                <Link
-                  href={item.href}
+                <button
+                  onClick={() => handleClick(item.href)}
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg hover:bg-orange-50 transition-colors"
                 >
                   {item.icon}
-                </Link>
+                </button>
               </motion.div>
             ))}
           </motion.div>
@@ -101,6 +109,7 @@ const FloatingDockMobile = () => {
 
 const FloatingDockDesktop = () => {
   let mouseX = useMotionValue(Infinity);
+  const scrollTo = useScrollTo();
 
   return (
     <motion.div
@@ -108,13 +117,13 @@ const FloatingDockDesktop = () => {
       onMouseLeave={() => mouseX.set(Infinity)}
       className="fixed top-6 left-1/2 -translate-x-1/2 z-50 hidden md:flex h-16 items-center gap-4 rounded-full bg-white/80 backdrop-blur-sm px-8 shadow-lg border border-neutral-100"
     >
-      <Link href="/" className="flex items-center">
+      <button onClick={() => scrollTo("home")} className="flex items-center">
         <img
           src="/icon/iconname.svg"
           alt="PurrPal Logo"
           className="h-8 w-auto mr-6"
         />
-      </Link>
+      </button>
 
       {navItems.map((item) => (
         <IconContainer mouseX={mouseX} key={item.name} {...item} />
@@ -141,6 +150,7 @@ function IconContainer({
   href: string;
 }) {
   let ref = useRef<HTMLDivElement>(null);
+  const scrollTo = useScrollTo();
 
   let distance = useTransform(mouseX, (val) => {
     let bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
@@ -165,7 +175,7 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <Link href={href}>
+    <button onClick={() => scrollTo(href)}>
       <motion.div
         ref={ref}
         style={{ width, height }}
@@ -187,6 +197,6 @@ function IconContainer({
         </AnimatePresence>
         {icon}
       </motion.div>
-    </Link>
+    </button>
   );
 } 
