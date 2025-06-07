@@ -15,6 +15,20 @@ export default {
       fontFamily: {
         poppins: ["var(--font-poppins)"],
       },
+      animation: {
+        marquee: "marquee var(--duration, 30s) linear infinite",
+        "marquee-reverse": "marquee-reverse var(--duration, 30s) linear infinite",
+      },
+      keyframes: {
+        marquee: {
+          from: { transform: "translateY(0)" },
+          to: { transform: "translateY(-50%)" },
+        },
+        "marquee-reverse": {
+          from: { transform: "translateY(-50%)" },
+          to: { transform: "translateY(0)" },
+        },
+      },
     },
   },
   plugins: [],
