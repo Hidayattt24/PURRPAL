@@ -4,8 +4,11 @@ import { OrbitingCircles } from "@/components/ui/orbiting-circles";
 import { Icons } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { SparklesText } from "@/components/ui/sparkles-text";
+import { useRouter } from "next/navigation";
 
 export const HeroSection = () => {
+  const router = useRouter();
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-start px-4 pt-32 bg-white overflow-hidden">
       {/* Background Elements */}
@@ -74,7 +77,10 @@ export const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex items-center justify-center"
         >
-          <button className="bg-gradient-to-r from-[#FF823C] to-[#C54F0C] px-8 py-4 rounded-full hover:opacity-90 transition-all text-white font-poppins font-medium shadow-lg hover:shadow-xl">
+          <button 
+            onClick={() => router.push("/main/home")}
+            className="bg-gradient-to-r from-[#FF823C] to-[#C54F0C] px-8 py-4 rounded-full hover:opacity-90 transition-all text-white font-poppins font-medium shadow-lg hover:shadow-xl"
+          >
             <Typewriter
               options={{
                 strings: ["✨ Get Started →"],

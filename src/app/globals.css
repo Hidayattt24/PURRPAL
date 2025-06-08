@@ -21,7 +21,41 @@ body {
   }
 }
 
+@keyframes line-width {
+  0% {
+    width: 0;
+    left: 50%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  50% {
+    width: 100%;
+    left: 0;
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    left: 50%;
+    opacity: 0;
+  }
+}
 
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 
 @layer base {
   :root {
@@ -50,6 +84,7 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -79,7 +114,15 @@ body {
   }
 }
 
+@keyframes scroll {
+  to {
+    transform: translate(calc(-50% - 0.5rem));
+  }
+}
 
+.animate-scroll {
+  animation: var(--animate-scroll);
+}
 
 @layer base {
   * {

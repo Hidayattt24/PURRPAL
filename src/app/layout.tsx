@@ -1,27 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-poppins",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PurrPal",
-  description: "PurrPal",
+  title: "Purrpal",
+  description: "Share your stories with Purrpal",
+  icons: {
+    icon: [
+      {
+        url: "/icon/favicon.svg",
+        type: "any",
+      },
+      {
+        url: "/icon/favicon.svg",
+        sizes: "any",
+      },
+    ],
+    apple: {
+      url: "/icon/favicon.svg",
+      type: "image/svg+xml",
+    },
+  },
 };
 
 export default function RootLayout({
@@ -30,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}>
-      <body className="font-poppins">
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
