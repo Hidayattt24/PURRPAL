@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { IconBrandSpotify } from "@tabler/icons-react";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
