@@ -1,9 +1,9 @@
 import React from "react";
 import Typewriter from "typewriter-effect";
-import { OrbitingCircles } from "./orbiting-circles";
-import { Icons } from "./icons";
+import { OrbitingCircles } from "@/components/ui/orbiting-circles";
+import { Icons } from "@/components/ui/icons";
 import { motion } from "framer-motion";
-import { SparklesText } from "./sparkles-text";
+import { SparklesText } from "@/components/ui/sparkles-text";
 
 export const HeroSection = () => {
   return (
