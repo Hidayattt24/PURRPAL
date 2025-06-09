@@ -8,16 +8,22 @@ import Link from "next/link";
 
 interface AuthFormProps {
     mode: "login" | "signup";
-    onSubmit: (data: { email: string; password: string }) => void;
+    onSubmit: (data: { email: string; password: string; username?: string }) => void;
 }
 
 export function AuthForm({ mode, onSubmit }: AuthFormProps) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({ email, password });
+        if (mode === "signup" && password !== confirmPassword) {
+            alert("Passwords don't match!");
+            return;
+        }
+        onSubmit(mode === "signup" ? { email, password, username } : { email, password });
     };
 
     return (
@@ -26,8 +32,8 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
                 {/* Left side - Illustration */}
                 <div className="relative hidden w-1/2 bg-[#FFF5EE] lg:block">
                     <Image
-                        src="/auth/login/auth-illustration.png"
-                        alt="Authentication illustration"
+                        src={mode === "login" ? "/auth/login/auth-illustration.png" : "/auth/login/register-auth.png"}
+                        alt={mode === "login" ? "Login illustration" : "Sign up illustration"}
                         fill
                         style={{ objectFit: 'cover' }}
                         priority
@@ -47,12 +53,25 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
                                 priority
                             />
                         </div>
-                        <h1 className="mb-2 text-3xl font-bold">Hello,</h1>
-                        <h2 className="text-2xl font-bold">Welcome Back</h2>
+                        <h1 className="mb-2 text-3xl font-bold">
+                            {mode === "login" ? "Hello," : "Sign Up"}
+                        </h1>
+                        <h2 className="text-2xl font-bold">
+                            {mode === "login" ? "Welcome Back" : "Create your account"}
+                        </h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-4">
+                            {mode === "signup" && (
+                                <Input
+                                    type="text"
+                                    placeholder="Username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                            )}
                             <Input
                                 type="email"
                                 placeholder="Email"
@@ -67,6 +86,15 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                            {mode === "signup" && (
+                                <Input
+                                    type="password"
+                                    placeholder="Re-enter password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                            )}
                         </div>
 
                         {mode === "login" && (
@@ -101,7 +129,7 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
                             variant="outline"
                             className="w-full"
                             onClick={() => {
-                                // Handle Google login
+                                // Handle Google login/signup
                             }}
                         >
                             <div className="relative w-5 h-5 mr-2">
