@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { IconArrowLeft, IconCamera, IconMapPin, IconX } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function CreateStoryPage() {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [recipient, setRecipient] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -13,6 +15,15 @@ export default function CreateStoryPage() {
     name: string;
     address: string;
   } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+    }
+  }, [router]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +69,44 @@ export default function CreateStoryPage() {
     }
   };
 
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          recipient,
+          content: message,
+          location,
+          activity_image_url: selectedImage
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create story');
+      }
+
+      // Redirect to home page after successful creation
+      router.push('/main/home');
+    } catch (error) {
+      console.error('Error creating story:', error);
+      alert('Failed to create story. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -69,9 +118,10 @@ export default function CreateStoryPage() {
           <h1 className="text-lg font-medium">Tell Your Story</h1>
           <button 
             className="px-4 py-2 bg-[#FF823C] text-white rounded-full text-sm font-medium disabled:opacity-50"
-            disabled={!message || !recipient}
+            disabled={!message || !recipient || isSubmitting}
+            onClick={handleSubmit}
           >
-            Share
+            {isSubmitting ? 'Sharing...' : 'Share'}
           </button>
         </div>
       </div>

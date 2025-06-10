@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
@@ -10,55 +10,45 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-
-const stories = [
-  {
-    from: "nayla",
-    content: "thank you for being my safe place through 2023... even if we drifted",
-    image: "/main/home/placeholder-avatar.jpg",
-    activityImage: "/main/home/placeholder-activity.jpg",
-    location: {
-      name: "Universitas Indonesia",
-      address: "Depok, Jawa Barat"
-    }
-  },
-  {
-    from: "jensen",
-    content: "kadang i wish i could tell u how much ur random texts made my day better",
-    image: "/main/home/placeholder-avatar.jpg",
-    activityImage: "/main/home/placeholder-activity.jpg",
-    location: {
-      name: "Fakultas Ilmu Komputer",
-      address: "Universitas Indonesia"
-    }
-  },
-  {
-    from: "emil",
-    content: "wish i could forget how safe it felt being around you dulu",
-    image: "/main/home/placeholder-avatar.jpg",
-    activityImage: "/main/home/placeholder-activity.jpg",
-    location: {
-      name: "Perpustakaan UI",
-      address: "Universitas Indonesia"
-    }
-  },
-  {
-    from: "vanya",
-    content: "funny how someone bisa jadi stranger padahal they knew all your secrets",
-    image: "/main/home/placeholder-avatar.jpg",
-    activityImage: "/main/home/placeholder-activity.jpg",
-    location: {
-      name: "Student Center UI",
-      address: "Universitas Indonesia"
-    }
-  }
-];
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const [isCreatingStory, setIsCreatingStory] = useState(false);
-  const userName = "User";
+  const [user, setUser] = useState<any>(null);
+  const [stories, setStories] = useState([]);
   const { resolvedTheme } = useTheme();
+  const router = useRouter();
   const shadowColor = resolvedTheme === "dark" ? "white" : "#FF823C";
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      router.push('/auth/login');
+      return;
+    }
+    setUser(JSON.parse(userData));
+
+    // Fetch stories from backend
+    const fetchStories = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stories`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch stories');
+        
+        const data = await response.json();
+        setStories(data);
+      } catch (error) {
+        console.error('Error fetching stories:', error);
+      }
+    };
+
+    fetchStories();
+  }, [router]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -66,7 +56,7 @@ export default function HomePage() {
       <div className="flex items-center space-x-4">
         <div className="w-12 h-12 bg-neutral-200 rounded-full overflow-hidden">
           <Image
-            src="/main/home/placeholder-avatar.jpg"
+            src={user?.avatar_url || "/main/home/placeholder-avatar.jpg"}
             alt="Profile"
             width={48}
             height={48}
@@ -74,7 +64,7 @@ export default function HomePage() {
           />
         </div>
         <h1 className="text-2xl font-medium text-neutral-800">
-          Hi, <span className="text-[#FF823C]">@{userName}</span>
+          Hi, <span className="text-[#FF823C]">@{user?.username || 'User'}</span>
         </h1>
       </div>
 
