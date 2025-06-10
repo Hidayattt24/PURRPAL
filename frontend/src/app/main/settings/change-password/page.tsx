@@ -19,10 +19,30 @@ export default function ChangePasswordPage() {
   });
 
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const validatePassword = (password: string) => {
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasMinLength = password.length >= 8;
+
+    return {
+      isValid: hasNumber && hasSpecialChar && hasMinLength,
+      errors: {
+        number: !hasNumber,
+        specialChar: !hasSpecialChar,
+        length: !hasMinLength
+      }
+    };
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Reset states
+    setError("");
+    setSuccess(false);
+
     // Basic validation
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
       setError("All fields are required");
@@ -34,12 +54,25 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    if (formData.newPassword.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (formData.newPassword === formData.currentPassword) {
+      setError("New password must be different from current password");
       return;
     }
 
-    setError("");
+    // Password strength validation
+    const validation = validatePassword(formData.newPassword);
+    if (!validation.isValid) {
+      const errors = [];
+      if (validation.errors.length) errors.push("at least 8 characters");
+      if (validation.errors.number) errors.push("at least one number");
+      if (validation.errors.specialChar) errors.push("at least one special character");
+      
+      setError(`Password must contain ${errors.join(", ")}`);
+      return;
+    }
+
+    // If all validations pass
+    setSuccess(true);
     // Handle password change here
     console.log("Password change submitted:", formData);
   };
@@ -73,6 +106,12 @@ export default function ChangePasswordPage() {
             {error && (
               <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm">
+                Password successfully changed!
               </div>
             )}
 

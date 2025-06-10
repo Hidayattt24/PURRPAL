@@ -32,7 +32,7 @@ export default function SettingsPage() {
                     className="object-cover"
                   />
                 </div>
-                <Link href="/main/map/edit-photo">
+                <Link href="/main/settings/edit-photo">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -52,7 +52,7 @@ export default function SettingsPage() {
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg">
             <h3 className="text-lg font-semibold mb-6">Account</h3>
             <div className="space-y-4">
-              <Link href="/main/map/edit-profile">
+              <Link href="/main/settings/edit-profile">
                 <motion.div
                   whileHover={{ x: 5 }}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer"
@@ -67,7 +67,7 @@ export default function SettingsPage() {
                 </motion.div>
               </Link>
 
-              <Link href="/main/map/change-password">
+              <Link href="/main/settings/change-password">
                 <motion.div
                   whileHover={{ x: 5 }}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer"
@@ -82,7 +82,7 @@ export default function SettingsPage() {
                 </motion.div>
               </Link>
 
-              <Link href="/main/map/edit-email">
+              <Link href="/main/settings/edit-email">
                 <motion.div
                   whileHover={{ x: 5 }}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer"

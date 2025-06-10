@@ -8,11 +8,38 @@ import Image from "next/image";
 
 export default function EditPhotoPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateFile = (file: File) => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validTypes.includes(file.type)) {
+      return "File type not supported. Please upload a JPG, PNG, or GIF file.";
+    }
+
+    if (file.size > maxSize) {
+      return "File size too large. Maximum size is 5MB.";
+    }
+
+    return null;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setError("");
+
     if (file) {
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
@@ -24,6 +51,7 @@ export default function EditPhotoPage() {
 
   const handleRemovePhoto = () => {
     setPreviewUrl(null);
+    setError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -48,6 +76,12 @@ export default function EditPhotoPage() {
           <h1 className="text-2xl font-semibold mb-6">Change Profile Photo</h1>
           
           <div className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Current/Preview Photo */}
             <div className="flex flex-col items-center">
               <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100 mb-4">
@@ -77,7 +111,7 @@ export default function EditPhotoPage() {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif"
                 className="hidden"
               />
 

@@ -2,8 +2,77 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const supabase = require('../config/supabase');
 const authMiddleware = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
 
 const router = express.Router();
+
+// Configure multer for file upload
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed!'));
+  }
+});
+
+// Upload profile picture
+router.put('/photo', authMiddleware, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    const timestamp = Date.now();
+    const fileExt = path.extname(file.originalname);
+    const filePath = `avatars/${req.userId}${fileExt}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('user-content')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('user-content')
+      .getPublicUrl(filePath);
+
+    // Update user profile with new avatar URL
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        avatar_url: publicUrl,
+        updated_at: new Date()
+      })
+      .eq('id', req.userId);
+
+    if (updateError) throw updateError;
+
+    res.json({ 
+      message: 'Profile picture updated successfully',
+      avatar_url: publicUrl
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Failed to upload profile picture' });
+  }
+});
 
 // Get user profile
 router.get('/profile', authMiddleware, async (req, res) => {
