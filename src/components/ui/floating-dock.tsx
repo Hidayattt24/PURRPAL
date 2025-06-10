@@ -41,6 +41,11 @@ const navItems = [
     icon: <IconQuestionMark className="w-5 h-5 text-[#FF823C]" />,
     href: "faq",
   },
+  {
+    name: "Login",
+    icon: <IconHome className="w-5 h-5 text-[#FF823C]" />,
+    href: "/auth/login",
+  },
 ];
 
 export const FloatingDock = () => {
@@ -58,7 +63,11 @@ const FloatingDockMobile = () => {
 
   const handleClick = (href: string) => {
     setOpen(false);
-    scrollTo(href);
+    if (href.startsWith('/')) {
+      window.location.href = href;
+    } else {
+      scrollTo(href);
+    }
   };
 
   return (
@@ -131,9 +140,11 @@ const FloatingDockDesktop = () => {
 
       <div className="h-8 w-[1px] bg-neutral-200 mx-2" />
 
-      <button className="bg-[#FF823C] text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-[#C54F0C] transition-colors">
-        Login
-      </button>
+      <Link href="/auth/login">
+        <button className="bg-[#FF823C] text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-[#C54F0C] transition-colors">
+          Login
+        </button>
+      </Link>
     </motion.div>
   );
 };
@@ -175,7 +186,13 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <button onClick={() => scrollTo(href)}>
+    <button onClick={() => {
+      if (href.startsWith('/')) {
+        window.location.href = href;
+      } else {
+        scrollTo(href);
+      }
+    }}>
       <motion.div
         ref={ref}
         style={{ width, height }}
