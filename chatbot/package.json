@@ -1,0 +1,163 @@
+{
+  "name": "purrpal-chatbot-enhanced",
+  "version": "2.0.0",
+  "description": "Enhanced PurrPal AI Chatbot for Cat Care with advanced features, monitoring, and robust error handling",
+  "main": "src/chatbot.js",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "node src/chatbot.js",
+    "dev": "node --watch src/chatbot.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:verbose": "jest --verbose",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "validate": "node scripts/validate-config.js",
+    "health-check": "node scripts/health-check.js",
+    "benchmark": "node scripts/benchmark.js",
+    "docs": "jsdoc src/ -d docs/",
+    "clean": "rimraf node_modules package-lock.json",
+    "reinstall": "npm run clean && npm install",
+    "prestart": "npm run validate",
+    "pretest": "npm run lint",
+    "postinstall": "node scripts/post-install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notsuperganang/purrpal-chatbot-integration.git"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "cat-care",
+    "veterinary",
+    "gemini",
+    "vertex-ai",
+    "google-cloud",
+    "pet-health",
+    "indonesia",
+    "machine-learning",
+    "conversational-ai"
+  ],
+  "author": {
+    "name": "PurrPal Team",
+    "email": "team@purrpal.id",
+    "url": "https://github.com/notsuperganang"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/notsuperganang/purrpal-chatbot-integration/issues"
+  },
+  "homepage": "https://github.com/notsuperganang/purrpal-chatbot-integration#readme",
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "joi": "^17.13.3",
+    "winston": "^3.17.0",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.4.1",
+    "compression": "^1.7.5",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "nodemon": "^3.1.10",
+    "eslint": "^9.15.0",
+    "eslint-config-node": "^4.1.0",
+    "eslint-plugin-jest": "^28.9.0",
+    "jsdoc": "^4.0.4",
+    "rimraf": "^6.0.1",
+    "supertest": "^7.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/src/**/*.test.js"
+    ],
+    "verbose": true,
+    "testTimeout": 30000,
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es2021": true,
+      "jest": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-console": "warn",
+      "no-unused-vars": "error",
+      "no-undef": "error",
+      "semi": [
+        "error",
+        "always"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ]
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "optionalDependencies": {
+    "redis": "^4.7.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/notsuperganang"
+  }
+}
