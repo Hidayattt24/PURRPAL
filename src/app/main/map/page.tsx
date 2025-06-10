@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
@@ -12,37 +12,11 @@ import {
   IconClock, 
   IconStar, 
   IconStarFilled,
-  IconExternalLink,
-  IconMapPinFilled,
-  IconCalendarTime
+  IconCalendarTime,
+  IconMapPinFilled
 } from "@tabler/icons-react";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
-
-// Contoh data veteriner (nanti bisa diganti dengan data dari API/database)
-const veterinaryServices = [
-  {
-    id: 1,
-    name: "Klinik Hewan Sejahtera",
-    address: "Jl. Pahlawan No. 123, Jakarta Selatan",
-    phone: "(021) 1234-5678",
-    rating: 4.8,
-    totalReviews: 156,
-    openHours: "08:00 - 20:00",
-    services: ["Vaksinasi", "Grooming", "Konsultasi", "UGD 24 Jam"],
-    position: [-6.2088, 106.8456],
-  },
-  {
-    id: 2,
-    name: "PetCare Veterinary",
-    address: "Jl. Gatot Subroto No. 45, Jakarta Pusat",
-    phone: "(021) 2345-6789",
-    rating: 4.6,
-    totalReviews: 98,
-    openHours: "09:00 - 21:00",
-    services: ["Vaksinasi", "Grooming", "Operasi", "Rawat Inap"],
-    position: [-6.2156, 106.8462],
-  },
-];
+import { veterinaryServices, type VeterinaryService } from "@/lib/data/veterinaryServices";
 
 // Custom icon untuk marker
 const customIcon = new Icon({
@@ -56,7 +30,7 @@ const customIcon = new Icon({
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 13);
+    map.setView(center);
   }, [center, map]);
   return null;
 }
@@ -72,11 +46,52 @@ const cardVariants = {
 };
 
 export default function MapPage() {
-  const [selectedClinic, setSelectedClinic] = useState<any>(null);
-  const [center, setCenter] = useState<[number, number]>([-6.2088, 106.8456]);
+  const [selectedClinic, setSelectedClinic] = useState<VeterinaryService | null>(null);
+  const [center, setCenter] = useState<[number, number]>([5.5718366, 95.3684017]); // Default ke Banda Aceh
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [selectedCity, setSelectedCity] = useState("");
+  const searchRef = useRef<HTMLDivElement>(null);
   const shadowColor = "#FF823C";
+
+  // Function to extract city name from address
+  const extractCity = (address: string) => {
+    // Common city identifiers in Indonesian addresses
+    const cityIdentifiers = ["Kota", "Kabupaten", "Kab.", "Kota Adm."];
+    
+    // Split address into parts
+    const parts = address.split(",").map(part => part.trim());
+    
+    // Look for parts containing city identifiers
+    for (const part of parts) {
+      for (const identifier of cityIdentifiers) {
+        if (part.includes(identifier)) {
+          // Remove the identifier and trim
+          return part.replace(identifier, "").trim();
+        }
+      }
+    }
+    
+    // If no identifier found, try to get the relevant part (usually after first comma)
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+    
+    return "";
+  };
+
+  // Close city suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowCitySuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Simulate loading state
@@ -105,18 +120,51 @@ export default function MapPage() {
     );
   };
 
+  // Get unique cities for suggestions with count
+  const citySuggestions = useMemo(() => {
+    const cityCount = new Map<string, number>();
+    veterinaryServices.forEach(clinic => {
+      const city = extractCity(clinic.address);
+      if (city) {
+        cityCount.set(city, (cityCount.get(city) || 0) + 1);
+      }
+    });
+    return Array.from(cityCount.entries())
+      .map(([city, count]) => ({ city, count }))
+      .sort((a, b) => b.count - a.count);
+  }, []);
+
+  // Handle city selection
+  const handleCitySelect = (city: string) => {
+    setSearchQuery(city);
+    setSelectedCity(city);
+    setShowCitySuggestions(false);
+  };
+
   // Filter klinik berdasarkan pencarian
-  const filteredClinics = useMemo(() => 
-    veterinaryServices.filter(clinic =>
-      clinic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      clinic.address.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-    [searchQuery]
-  );
+  const filteredClinics = useMemo(() => {
+    if (!searchQuery) return veterinaryServices;
+    
+    const query = searchQuery.toLowerCase();
+    return veterinaryServices.filter(clinic => {
+      const cityName = extractCity(clinic.address).toLowerCase();
+      return clinic.name.toLowerCase().includes(query) ||
+        clinic.address.toLowerCase().includes(query) ||
+        cityName.includes(query) ||
+        clinic.services.some(service => 
+          service.toLowerCase().includes(query)
+        );
+    });
+  }, [searchQuery]);
+
+  const handleClinicSelect = (clinic: VeterinaryService) => {
+    setSelectedClinic(clinic);
+    setCenter(clinic.position);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-orange-50/30 p-6">
-      <div className="text-center mb-12">
+      <div className="text-center mb-8">
         <h2 className="text-4xl font-bold">
           Selamat Datang di{" "}
           <LineShadowText className="italic" shadowColor={shadowColor}>
@@ -128,80 +176,157 @@ export default function MapPage() {
         </p>
       </div>
 
-      {/* Search Bar with Animation */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative mb-8 max-w-2xl mx-auto"
+      {/* Map Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full h-[400px] rounded-2xl overflow-hidden relative mb-8"
       >
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Cari klinik atau lokasi..."
-          className="w-full px-4 py-3 pl-10 pr-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-lg bg-white/80 backdrop-blur-sm transition-all duration-300"
-        />
-        <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-      </motion.div>
-
-      {/* Interactive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-        {/* Map Container with Glass Effect */}
-        <div className="lg:col-span-2 w-full h-[600px] rounded-2xl overflow-hidden relative">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full h-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden"
+        <div className="w-full h-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
+          <MapContainer
+            center={center}
+            zoom={13}
+            style={{ height: "100%", width: "100%" }}
+            className="rounded-2xl z-10 [&_.leaflet-tile-pane]:brightness-[1.02] [&_.leaflet-control-zoom]:!bg-white/80 [&_.leaflet-control-zoom]:!backdrop-blur-sm [&_.leaflet-control-zoom]:!border-none [&_.leaflet-control-zoom]:!shadow-lg"
           >
-            <MapContainer
-              center={center}
-              zoom={13}
-              style={{ height: "100%", width: "100%" }}
-              className="rounded-2xl z-10"
-            >
-              <ChangeView center={center} />
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <AnimatePresence>
-                {veterinaryServices.map((clinic) => (
-                  <Marker
-                    key={clinic.id}
-                    position={clinic.position as [number, number]}
-                    icon={customIcon}
-                    eventHandlers={{
-                      click: () => {
-                        setSelectedClinic(clinic);
-                        setCenter(clinic.position as [number, number]);
-                      },
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-3 min-w-[200px]">
-                        <h3 className="font-semibold text-lg mb-2">{clinic.name}</h3>
-                        <div className="space-y-2">
-                          <p className="text-sm text-gray-600 flex items-center gap-2">
-                            <IconMapPin className="w-4 h-4 text-orange-500" />
-                            {clinic.address}
-                          </p>
-                          <p className="text-sm text-gray-600 flex items-center gap-2">
-                            <IconPhone className="w-4 h-4 text-orange-500" />
-                            {clinic.phone}
-                          </p>
+            <ChangeView center={center} />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              className="brightness-105 contrast-[0.95] saturate-[0.85]"
+            />
+            <AnimatePresence>
+              {filteredClinics.map((clinic) => (
+                <Marker
+                  key={clinic.id}
+                  position={clinic.position}
+                  icon={customIcon}
+                  eventHandlers={{
+                    click: () => handleClinicSelect(clinic),
+                  }}
+                >
+                  <Popup className="rounded-xl overflow-hidden [&_.leaflet-popup-content-wrapper]:!rounded-xl [&_.leaflet-popup-content-wrapper]:!p-0 [&_.leaflet-popup-content]:!m-0 [&_.leaflet-popup-tip-container]:!hidden">
+                    <div className="p-4 min-w-[250px] bg-white">
+                      <h3 className="font-semibold text-lg mb-3">{clinic.name}</h3>
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <IconMapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                          <span className="flex-1">{clinic.address}</span>
+                        </p>
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <IconPhone className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                          <span className="flex-1">{clinic.phone}</span>
+                        </p>
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <motion.a
+                            href={clinic.googleMapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+                          >
+                            <IconMapPin className="w-4 h-4" />
+                            Petunjuk Arah
+                          </motion.a>
                         </div>
                       </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </AnimatePresence>
-            </MapContainer>
-          </motion.div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </AnimatePresence>
+          </MapContainer>
         </div>
+      </motion.div>
 
-        {/* Scrollable Cards List */}
-        <div className="h-[600px] overflow-y-auto rounded-2xl custom-scrollbar">
+      {/* Search Section */}
+      <div className="max-w-6xl mx-auto mb-8">
+        <motion.div 
+          ref={searchRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative"
+        >
+          <div className="relative">
+            <input
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowCitySuggestions(true);
+              }}
+              onFocus={() => setShowCitySuggestions(true)}
+              placeholder="Cari klinik, kota, atau layanan..."
+              className="w-full px-4 py-3 pl-10 pr-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-lg bg-white/80 backdrop-blur-sm transition-all duration-300"
+            />
+            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          </div>
+
+          {/* Enhanced City Suggestions Dropdown */}
           <AnimatePresence>
-            {filteredClinics.map((clinic, index) => (
+            {showCitySuggestions && searchQuery.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+              >
+                <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                  {citySuggestions
+                    .filter(({ city }) => 
+                      city.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map(({ city, count }, index) => (
+                      <motion.div
+                        key={city}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleCitySelect(city)}
+                        className={`
+                          flex items-center justify-between px-4 py-3 cursor-pointer
+                          ${selectedCity === city ? 'bg-orange-50' : 'hover:bg-gray-50'}
+                          transition-colors duration-200
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          <IconMapPinFilled className="w-4 h-4 text-orange-500" />
+                          <span className="text-gray-700">{city}</span>
+                        </div>
+                        <span className="text-sm text-gray-400">
+                          {count} klinik
+                        </span>
+                      </motion.div>
+                    ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+        
+        {/* Search tips */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-2 text-sm text-gray-500 text-center space-y-1"
+        >
+          <p>Cari berdasarkan: nama klinik, kota, atau layanan</p>
+          {selectedCity && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm"
+            >
+              <IconMapPinFilled className="w-4 h-4" />
+              <span>Menampilkan hasil untuk: {selectedCity}</span>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Clinic Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AnimatePresence mode="wait">
+          {filteredClinics.length > 0 ? (
+            filteredClinics.map((clinic, index) => (
               <motion.div
                 key={clinic.id}
                 variants={cardVariants}
@@ -209,15 +334,12 @@ export default function MapPage() {
                 animate="visible"
                 whileHover="hover"
                 transition={{ delay: index * 0.1 }}
-                className={`p-6 rounded-2xl cursor-pointer mb-4 transition-all ${
+                className={`p-6 rounded-2xl cursor-pointer transition-all ${
                   selectedClinic?.id === clinic.id
                     ? "bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-500"
                     : "bg-white/80 backdrop-blur-sm hover:bg-white border-gray-200"
                 } border shadow-lg`}
-                onClick={() => {
-                  setSelectedClinic(clinic);
-                  setCenter(clinic.position as [number, number]);
-                }}
+                onClick={() => handleClinicSelect(clinic)}
               >
                 {/* Clinic Name and Status */}
                 <div className="flex justify-between items-start mb-3">
@@ -302,7 +424,7 @@ export default function MapPage() {
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-3">
                   <motion.a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${clinic.position[0]},${clinic.position[1]}`}
+                    href={clinic.googleMapUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.02 }}
@@ -323,9 +445,27 @@ export default function MapPage() {
                   </motion.a>
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+            ))
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="col-span-full flex flex-col items-center justify-center p-8 text-center"
+            >
+              <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                <IconMapPin className="w-12 h-12 text-orange-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Tidak Ada Hasil
+              </h3>
+              <p className="text-gray-600 max-w-md">
+                Maaf, kami tidak dapat menemukan klinik yang sesuai dengan pencarian Anda. 
+                Coba gunakan kata kunci yang berbeda atau perluas area pencarian Anda.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
