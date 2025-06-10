@@ -78,7 +78,7 @@ export const HeroSection = () => {
           className="flex items-center justify-center"
         >
           <button 
-            onClick={() => router.push("/main/home")}
+            onClick={() => router.push("/auth/login")}
             className="bg-gradient-to-r from-[#FF823C] to-[#C54F0C] px-8 py-4 rounded-full hover:opacity-90 transition-all text-white font-poppins font-medium shadow-lg hover:shadow-xl"
           >
             <Typewriter
