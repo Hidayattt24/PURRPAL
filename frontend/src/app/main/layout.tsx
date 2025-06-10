@@ -7,6 +7,7 @@ import {
   IconBook2,
   IconMapPin,
   IconSettings,
+  IconMessageCircle,
 } from "@tabler/icons-react";
 import {
   AnimatePresence,
@@ -34,6 +35,11 @@ const navItems = [
     name: "Modul Edukasi",
     icon: <IconBook2 className="w-5 h-5 text-[#FF823C]" />,
     href: "/main/modul",
+  },
+  {
+    name: "Chatbot",
+    icon: <IconMessageCircle className="w-5 h-5 text-[#FF823C]" />,
+    href: "/main/chatbot",
   },
   {
     name: "Direktori Layanan",
