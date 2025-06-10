@@ -13,9 +13,18 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    res.json(data);
+    // Transform data to match frontend format
+    const formattedModules = data.map(module => ({
+      id: module.id,
+      title: module.title,
+      description: module.description,
+      icon: module.icon,
+      color: module.color
+    }));
+
+    res.json(formattedModules);
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching modules:', error);
     res.status(500).json({ error: 'Failed to fetch modules' });
   }
 });
@@ -43,10 +52,10 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       ...module,
-      sections
+      sections: sections || []
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching module:', error);
     res.status(500).json({ error: 'Failed to fetch module' });
   }
 });

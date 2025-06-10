@@ -1,55 +1,38 @@
+const fs = require('fs');
+const path = require('path');
+const { parse } = require('csv-parse');
 const supabase = require('../config/supabase');
-
-const modules = [
-  {
-    id: "pencegahan-penyakit",
-    title: "Pencegahan Penyakit",
-    description: "Pelajari cara mencegah penyakit umum pada kucing melalui vaksinasi, nutrisi yang tepat, dan perawatan rutin yang optimal.",
-    icon: "IconHeartFilled",
-    color: "from-orange-400 to-orange-600"
-  },
-  {
-    id: "perawatan-dasar",
-    title: "Perawatan Dasar",
-    description: "Panduan lengkap perawatan dasar kucing dari grooming hingga kebutuhan harian.",
-    icon: "IconPaw",
-    color: "from-red-400 to-red-600"
-  },
-  {
-    id: "vaksinasi",
-    title: "Vaksinasi",
-    description: "Informasi lengkap tentang jadwal dan jenis vaksinasi yang diperlukan kucing.",
-    icon: "IconVaccine",
-    color: "from-blue-400 to-blue-600"
-  },
-  {
-    id: "perilaku",
-    title: "Perilaku Kucing",
-    description: "Memahami bahasa tubuh dan perilaku kucing untuk komunikasi yang lebih baik.",
-    icon: "IconMoodHappy",
-    color: "from-green-400 to-green-600"
-  },
-  {
-    id: "nutrisi",
-    title: "Nutrisi & Diet",
-    description: "Panduan nutrisi dan pola makan sehat untuk kucing.",
-    icon: "IconBowl",
-    color: "from-purple-400 to-purple-600"
-  }
-];
 
 async function seedModules() {
   try {
-    // Insert modules
-    const { error } = await supabase
-      .from('education_modules')
-      .upsert(modules, { onConflict: 'id' });
+    const csvFilePath = path.join(__dirname, 'education-modules.csv');
+    const fileContent = fs.readFileSync(csvFilePath, { encoding: 'utf-8' });
 
-    if (error) throw error;
+    // Parse CSV
+    parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      delimiter: ',',
+    }, async (err, records) => {
+      if (err) {
+        console.error('Error parsing CSV:', err);
+        return;
+      }
 
-    console.log('Modules seeded successfully');
+      // Insert modules
+      const { error } = await supabase
+        .from('education_modules')
+        .upsert(records, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Error seeding modules:', error);
+        return;
+      }
+
+      console.log('Modules seeded successfully');
+    });
   } catch (error) {
-    console.error('Error seeding modules:', error);
+    console.error('Error reading CSV file:', error);
   }
 }
 
