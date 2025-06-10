@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { IconChevronRight, IconEdit, IconLock, IconMail, IconLogout } from "@tabler/icons-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     // Get token from localStorage
@@ -58,6 +58,7 @@ export default function SettingsPage() {
   }, [router]);
 
   const handleLogout = () => {
+    setOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
     router.push('/auth/login');
@@ -163,7 +164,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Logout Button */}
-          <Dialog.Root open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger asChild>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -176,24 +177,25 @@ export default function SettingsPage() {
             </Dialog.Trigger>
 
             <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" />
-              <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-8 shadow-xl z-50 w-[90%] max-w-md">
-                <Dialog.Title className="text-xl font-semibold mb-4">
+              <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+              <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-3xl">
+                <Dialog.Title className="text-xl font-semibold">
                   Confirm Logout
                 </Dialog.Title>
-                <Dialog.Description className="text-gray-600 mb-6">
+                <Dialog.Description className="text-gray-600">
                   Are you sure you want to log out of your account?
                 </Dialog.Description>
 
-                <div className="flex gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowLogoutDialog(false)}
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </motion.button>
+                <div className="flex gap-4 mt-4">
+                  <Dialog.Close asChild>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </motion.button>
+                  </Dialog.Close>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

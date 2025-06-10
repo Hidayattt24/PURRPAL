@@ -12,6 +12,13 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 
+// Define the custom event type
+declare global {
+  interface WindowEventMap {
+    'userDataUpdated': CustomEvent<any>;
+  }
+}
+
 export default function HomePage() {
   const [isCreatingStory, setIsCreatingStory] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -75,16 +82,15 @@ export default function HomePage() {
     fetchStories(token);
 
     // Listen for user data updates
-    const handleUserDataUpdate = async (event: CustomEvent<any>) => {
-      // When user data is updated elsewhere, fetch fresh data from the server
-      await fetchUserProfile(token);
+    const handleUserDataUpdate = (event: CustomEvent<any>) => {
+      fetchUserProfile(token);
     };
 
-    window.addEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+    window.addEventListener('userDataUpdated', handleUserDataUpdate);
 
     // Cleanup event listener
     return () => {
-      window.removeEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+      window.removeEventListener('userDataUpdated', handleUserDataUpdate);
     };
   }, [router]);
 
