@@ -43,7 +43,8 @@ CREATE TABLE module_sections (
   icon VARCHAR(50),
   color VARCHAR(100),
   highlights TEXT[], -- Array of highlights
-  order_index INTEGER DEFAULT 0
+  order_index INTEGER DEFAULT 0,
+  UNIQUE (module_id, title)
 );
 
 -- Veterinary services (from your data)

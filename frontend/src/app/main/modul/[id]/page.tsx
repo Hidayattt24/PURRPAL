@@ -2,9 +2,61 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { IconArrowLeft, IconPaw } from "@tabler/icons-react";
+import { 
+  IconArrowLeft,
+  IconPaw, 
+  IconHeartFilled, 
+  IconVaccine, 
+  IconMoodHappy, 
+  IconBowl,
+  IconMedicalCross,
+  IconDog,
+  IconMoodSmile,
+  IconSun,
+  IconPlane,
+  IconApple,
+  IconStethoscope,
+  IconPill,
+  IconCat,
+  IconHeart,
+  IconFirstAidKit
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import React from 'react';
+
+// Icon mapping - expanded with all possible icons
+const iconComponents: Record<string, React.ReactNode> = {
+  IconPaw: <IconPaw className="w-6 h-6" />,
+  IconHeartFilled: <IconHeartFilled className="w-6 h-6" />,
+  IconVaccine: <IconVaccine className="w-6 h-6" />,
+  IconMoodHappy: <IconMoodHappy className="w-6 h-6" />,
+  IconBowl: <IconBowl className="w-6 h-6" />,
+  IconMedicalCross: <IconMedicalCross className="w-6 h-6" />,
+  IconDog: <IconDog className="w-6 h-6" />,
+  IconMoodSmile: <IconMoodSmile className="w-6 h-6" />,
+  IconSun: <IconSun className="w-6 h-6" />,
+  IconPlane: <IconPlane className="w-6 h-6" />,
+  IconApple: <IconApple className="w-6 h-6" />,
+  IconStethoscope: <IconStethoscope className="w-6 h-6" />,
+  IconPill: <IconPill className="w-6 h-6" />,
+  IconCat: <IconCat className="w-6 h-6" />,
+  IconHeart: <IconHeart className="w-6 h-6" />,
+  IconFirstAidKit: <IconFirstAidKit className="w-6 h-6" />
+};
+
+// Helper function to get icon component
+const getIconComponent = (iconName: string) => {
+  // Remove any "icon-" prefix if it exists
+  const normalizedIconName = iconName.replace(/^icon-/i, '');
+  // Convert to proper case (e.g., "medical-cross" to "IconMedicalCross")
+  const properIconName = 'Icon' + normalizedIconName
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+  
+  return iconComponents[properIconName] || iconComponents.IconPaw;
+};
 
 interface ModuleSection {
   id: string;
@@ -122,7 +174,7 @@ export default function ModulDetailPage() {
             >
               <div className="flex items-start gap-4">
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${section.color} text-white`}>
-                  <IconPaw className="w-6 h-6" />
+                  {getIconComponent(section.icon)}
                 </div>
                 <div className="space-y-4">
                   <h2 className="text-2xl font-semibold text-neutral-800">

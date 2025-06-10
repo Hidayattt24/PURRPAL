@@ -33,7 +33,10 @@ async function seedModuleSections() {
       // Insert sections
       const { error } = await supabase
         .from('module_sections')
-        .upsert(sections, { onConflict: 'module_id,order_index' });
+        .upsert(sections, { 
+          onConflict: 'module_id,title',
+          ignoreDuplicates: false
+        });
 
       if (error) {
         console.error('Error seeding module sections:', error);
