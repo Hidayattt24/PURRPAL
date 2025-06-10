@@ -17,10 +17,9 @@ const stories = [
     content: "thank you for being my safe place through 2023... even if we drifted",
     image: "/main/home/placeholder-avatar.jpg",
     activityImage: "/main/home/placeholder-activity.jpg",
-    song: {
-      title: "SOUL LADY",
-      artist: "YUKIKA",
-      image: "/main/home/placeholder-song.jpg"
+    location: {
+      name: "Universitas Indonesia",
+      address: "Depok, Jawa Barat"
     }
   },
   {
@@ -28,10 +27,9 @@ const stories = [
     content: "kadang i wish i could tell u how much ur random texts made my day better",
     image: "/main/home/placeholder-avatar.jpg",
     activityImage: "/main/home/placeholder-activity.jpg",
-    song: {
-      title: "Past Life",
-      artist: "Tame Impala",
-      image: "/main/home/placeholder-song.jpg"
+    location: {
+      name: "Fakultas Ilmu Komputer",
+      address: "Universitas Indonesia"
     }
   },
   {
@@ -39,10 +37,9 @@ const stories = [
     content: "wish i could forget how safe it felt being around you dulu",
     image: "/main/home/placeholder-avatar.jpg",
     activityImage: "/main/home/placeholder-activity.jpg",
-    song: {
-      title: "Always",
-      artist: "Daniel Caesar",
-      image: "/main/home/placeholder-song.jpg"
+    location: {
+      name: "Perpustakaan UI",
+      address: "Universitas Indonesia"
     }
   },
   {
@@ -50,10 +47,9 @@ const stories = [
     content: "funny how someone bisa jadi stranger padahal they knew all your secrets",
     image: "/main/home/placeholder-avatar.jpg",
     activityImage: "/main/home/placeholder-activity.jpg",
-    song: {
-      title: "White Ferrari",
-      artist: "Frank Ocean",
-      image: "/main/home/placeholder-song.jpg"
+    location: {
+      name: "Student Center UI",
+      address: "Universitas Indonesia"
     }
   }
 ];

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState, useRef } from "react";
-import { IconBrandSpotify } from "@tabler/icons-react";
+import { IconMapPin } from "@tabler/icons-react";
 
 export const InfiniteMovingCards = ({
   items,
@@ -16,10 +16,9 @@ export const InfiniteMovingCards = ({
     from: string;
     image?: string;
     activityImage?: string;
-    song?: {
-      title: string;
-      artist: string;
-      image: string;
+    location?: {
+      name: string;
+      address: string;
     };
   }[];
   direction?: "left" | "right";
@@ -118,19 +117,14 @@ export const InfiniteMovingCards = ({
               {/* Story content */}
               <p className="text-neutral-600 text-sm leading-relaxed">{item.content}</p>
 
-              {/* Song */}
-              {item.song && (
+              {/* Location */}
+              {item.location && (
                 <div className="flex items-center gap-3 bg-neutral-50 p-2 rounded-lg">
-                  <img
-                    src={item.song.image}
-                    alt={item.song.title}
-                    className="w-10 h-10 rounded object-cover"
-                  />
+                  <IconMapPin className="w-5 h-5 text-[#FF823C] flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-neutral-800">{item.song.title}</p>
-                    <p className="text-xs text-neutral-600">{item.song.artist}</p>
+                    <p className="text-xs font-medium text-neutral-800">{item.location.name}</p>
+                    <p className="text-xs text-neutral-600">{item.location.address}</p>
                   </div>
-                  <IconBrandSpotify className="w-5 h-5 text-[#1DB954] flex-shrink-0" />
                 </div>
               )}
 
@@ -140,7 +134,7 @@ export const InfiniteMovingCards = ({
                   <img
                     src={item.activityImage}
                     alt={`${item.from}'s activity`}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-auto max-h-[300px] object-contain"
                   />
                 </div>
               )}

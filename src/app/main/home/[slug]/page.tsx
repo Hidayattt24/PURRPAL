@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconArrowLeft, IconCamera, IconSearch, IconBrandSpotify, IconX } from "@tabler/icons-react";
+import { IconArrowLeft, IconCamera, IconMapPin, IconX } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -9,27 +9,10 @@ export default function CreateStoryPage() {
   const [message, setMessage] = useState("");
   const [recipient, setRecipient] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isSearchingSong, setIsSearchingSong] = useState(false);
-  const [selectedSong, setSelectedSong] = useState<{
-    title: string;
-    artist: string;
-    image: string;
+  const [location, setLocation] = useState<{
+    name: string;
+    address: string;
   } | null>(null);
-
-  // Dummy songs data for demo
-  const dummySongs = [
-    {
-      title: "SOUL LADY",
-      artist: "YUKIKA",
-      image: "/main/home/placeholder-song.jpg"
-    },
-    {
-      title: "Past Life",
-      artist: "Tame Impala",
-      image: "/main/home/placeholder-song.jpg"
-    },
-    // Add more dummy songs as needed
-  ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,6 +22,39 @@ export default function CreateStoryPage() {
         setSelectedImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Function to get current location and handle it
+  const handleAddLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            // Here you would typically make an API call to reverse geocode the coordinates
+            // For demo purposes, we'll just set a default location
+            setLocation({
+              name: "Current Location",
+              address: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
+            });
+
+            // Here you could also update the selectedImage based on the location
+            // For example, fetch a photo of the location or use street view
+            // For now, we'll just use a placeholder
+            if (!selectedImage) {
+              setSelectedImage("/main/home/placeholder-activity.jpg");
+            }
+          } catch (error) {
+            console.error("Error getting location details:", error);
+          }
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Unable to get your location. Please try again.");
+        }
+      );
+    } else {
+      alert("Location services are not available in your browser.");
     }
   };
 
@@ -82,30 +98,65 @@ export default function CreateStoryPage() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Share your story..."
-              className="w-full h-40 px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] placeholder:text-neutral-400 resize-none font-handwriting"
+              className="w-full h-40 px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] placeholder:text-neutral-400 resize-none"
             />
           </div>
 
-          {/* Image Upload */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700">Add Photo:</label>
-            <div className="relative">
-              {selectedImage ? (
-                <div className="relative w-full h-48 rounded-xl overflow-hidden">
-                  <Image
-                    src={selectedImage}
-                    alt="Uploaded"
-                    fill
-                    className="object-cover"
-                  />
+          {/* Location and Image Section */}
+          <div className="space-y-4">
+            <label className="text-sm font-medium text-neutral-700">Add My Location (Optional):</label>
+            
+            {location ? (
+              <div className="space-y-4">
+                {/* Location Display */}
+                <div className="flex items-center gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                  <IconMapPin className="w-5 h-5 text-[#FF823C] flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-neutral-800">{location.name}</p>
+                    <p className="text-xs text-neutral-600">{location.address}</p>
+                  </div>
                   <button
-                    onClick={() => setSelectedImage(null)}
-                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
+                    onClick={() => {
+                      setLocation(null);
+                      if (!selectedImage) setSelectedImage(null);
+                    }}
+                    className="p-1 hover:bg-neutral-200 rounded-full"
                   >
-                    <IconX className="w-5 h-5" />
+                    <IconX className="w-5 h-5 text-neutral-500" />
                   </button>
                 </div>
-              ) : (
+
+                {/* Location Image */}
+                {selectedImage && (
+                  <div className="relative w-full rounded-xl overflow-hidden">
+                    <img
+                      src={selectedImage}
+                      alt="Location"
+                      className="w-full h-auto max-h-[300px] object-contain"
+                    />
+                    <button
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
+                    >
+                      <IconX className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleAddLocation}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-neutral-300 hover:border-[#FF823C] transition-colors"
+              >
+                <IconMapPin className="w-5 h-5 text-[#FF823C]" />
+                <span className="text-sm text-neutral-600">Add my current location</span>
+              </button>
+            )}
+
+            {/* Manual Image Upload (if no location) */}
+            {!location && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-neutral-700 block mb-2">Or Add a Photo:</label>
                 <label className="block w-full border-2 border-dashed border-neutral-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#FF823C] transition-colors">
                   <input
                     type="file"
@@ -116,94 +167,11 @@ export default function CreateStoryPage() {
                   <IconCamera className="w-8 h-8 mx-auto mb-2 text-neutral-400" />
                   <p className="text-sm text-neutral-600">Click to upload a photo</p>
                 </label>
-              )}
-            </div>
-          </div>
-
-          {/* Song Selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700">Add Song:</label>
-            {selectedSong ? (
-              <div className="flex items-center space-x-3 bg-neutral-50 p-3 rounded-lg border border-neutral-100">
-                <img
-                  src={selectedSong.image}
-                  alt={selectedSong.title}
-                  className="w-12 h-12 rounded object-cover"
-                />
-                <div>
-                  <p className="text-sm font-medium text-neutral-800">{selectedSong.title}</p>
-                  <p className="text-xs text-neutral-600">{selectedSong.artist}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedSong(null)}
-                  className="ml-auto p-1 hover:bg-neutral-200 rounded-full"
-                >
-                  <IconX className="w-5 h-5 text-neutral-500" />
-                </button>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsSearchingSong(true)}
-                className="w-full flex items-center space-x-2 px-4 py-3 rounded-xl border border-neutral-200 text-left hover:border-[#FF823C] transition-colors"
-              >
-                <IconBrandSpotify className="w-5 h-5 text-[#1DB954]" />
-                <span className="text-sm text-neutral-600">Choose a song from Spotify</span>
-              </button>
             )}
           </div>
         </div>
       </div>
-
-      {/* Song Search Modal */}
-      {isSearchingSong && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="w-full h-[80vh] bg-white rounded-t-3xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium">Choose a Song</h3>
-              <button
-                onClick={() => setIsSearchingSong(false)}
-                className="p-1 hover:bg-neutral-100 rounded-full"
-              >
-                <IconX className="w-6 h-6 text-neutral-500" />
-              </button>
-            </div>
-            
-            {/* Search Input */}
-            <div className="relative mb-6">
-              <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search for a song..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C]"
-              />
-            </div>
-
-            {/* Songs List */}
-            <div className="space-y-3 max-h-[calc(80vh-200px)] overflow-y-auto">
-              {dummySongs.map((song, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSelectedSong(song);
-                    setIsSearchingSong(false);
-                  }}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50"
-                >
-                  <img
-                    src={song.image}
-                    alt={song.title}
-                    className="w-12 h-12 rounded object-cover"
-                  />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-neutral-800">{song.title}</p>
-                    <p className="text-xs text-neutral-600">{song.artist}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
