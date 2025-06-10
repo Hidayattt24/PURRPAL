@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { IconBrandSpotify } from "@tabler/icons-react";
 
 export const InfiniteMovingCards = ({
@@ -14,6 +14,8 @@ export const InfiniteMovingCards = ({
   items: {
     content: string;
     from: string;
+    image?: string;
+    activityImage?: string;
     song?: {
       title: string;
       artist: string;
@@ -25,8 +27,8 @@ export const InfiniteMovingCards = ({
   pauseOnHover?: boolean;
   className?: string;
 }) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const scrollerRef = React.useRef<HTMLUListElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     addAnimation();
@@ -90,44 +92,56 @@ export const InfiniteMovingCards = ({
       <ul
         ref={scrollerRef}
         className={cn(
-          "flex w-max min-w-full shrink-0 flex-nowrap gap-6 py-4",
+          "flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap",
           start && "animate-scroll",
           pauseOnHover && "hover:[animation-play-state:paused]"
         )}
       >
         {items.map((item, idx) => (
           <li
-            className="relative w-[350px] max-w-full shrink-0 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
-            key={item.from + idx}
+            className="w-[350px] max-w-full relative flex-shrink-0 rounded-2xl border border-neutral-200 bg-white p-4 md:w-[450px]"
+            key={idx}
           >
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 rounded-full bg-[#FF823C]/10 flex items-center justify-center">
-                    <span className="text-sm text-[#FF823C]">@</span>
-                  </div>
-                  <div className="text-sm font-medium text-[#FF823C]">From: {item.from}</div>
+              {/* Header with avatar and username */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                  <img
+                    src={item.image || "/main/home/placeholder-avatar.jpg"}
+                    alt={`${item.from}'s avatar`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+                <h3 className="font-medium text-neutral-800">@{item.from}</h3>
               </div>
-              <p className="text-lg font-handwriting text-neutral-800 leading-relaxed">
-                {item.content}
-              </p>
+
+              {/* Story content */}
+              <p className="text-neutral-600 text-sm leading-relaxed">{item.content}</p>
+
+              {/* Song */}
               {item.song && (
-                <div className="mt-4 flex items-center space-x-3 bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                <div className="flex items-center gap-3 bg-neutral-50 p-2 rounded-lg">
                   <img
                     src={item.song.image}
                     alt={item.song.title}
-                    className="w-12 h-12 rounded object-cover"
+                    className="w-10 h-10 rounded object-cover"
                   />
-                  <div>
-                    <p className="text-sm font-medium text-neutral-800">
-                      {item.song.title}
-                    </p>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-neutral-800">{item.song.title}</p>
                     <p className="text-xs text-neutral-600">{item.song.artist}</p>
                   </div>
-                  <div className="ml-auto">
-                    <IconBrandSpotify className="w-6 h-6 text-neutral-400" />
-                  </div>
+                  <IconBrandSpotify className="w-5 h-5 text-[#1DB954] flex-shrink-0" />
+                </div>
+              )}
+
+              {/* Activity Image */}
+              {item.activityImage && (
+                <div className="mt-3 rounded-lg overflow-hidden">
+                  <img
+                    src={item.activityImage}
+                    alt={`${item.from}'s activity`}
+                    className="w-full h-48 object-cover"
+                  />
                 </div>
               )}
             </div>

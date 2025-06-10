@@ -15,6 +15,8 @@ const stories = [
   {
     from: "nayla",
     content: "thank you for being my safe place through 2023... even if we drifted",
+    image: "/main/home/placeholder-avatar.jpg",
+    activityImage: "/main/home/placeholder-activity.jpg",
     song: {
       title: "SOUL LADY",
       artist: "YUKIKA",
@@ -24,6 +26,8 @@ const stories = [
   {
     from: "jensen",
     content: "kadang i wish i could tell u how much ur random texts made my day better",
+    image: "/main/home/placeholder-avatar.jpg",
+    activityImage: "/main/home/placeholder-activity.jpg",
     song: {
       title: "Past Life",
       artist: "Tame Impala",
@@ -33,6 +37,8 @@ const stories = [
   {
     from: "emil",
     content: "wish i could forget how safe it felt being around you dulu",
+    image: "/main/home/placeholder-avatar.jpg",
+    activityImage: "/main/home/placeholder-activity.jpg",
     song: {
       title: "Always",
       artist: "Daniel Caesar",
@@ -42,6 +48,8 @@ const stories = [
   {
     from: "vanya",
     content: "funny how someone bisa jadi stranger padahal they knew all your secrets",
+    image: "/main/home/placeholder-avatar.jpg",
+    activityImage: "/main/home/placeholder-activity.jpg",
     song: {
       title: "White Ferrari",
       artist: "Frank Ocean",
