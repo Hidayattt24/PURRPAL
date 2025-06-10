@@ -7,6 +7,7 @@ const storiesRoutes = require('./routes/stories');
 const modulesRoutes = require('./routes/modules');
 const veterinaryRoutes = require('./routes/veterinary');
 const userRoutes = require('./routes/user');
+const locationRoutes = require('./routes/location');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -267,6 +268,7 @@ app.use('/api/stories', storiesRoutes);
 app.use('/api/modules', modulesRoutes);
 app.use('/api/veterinary-services', veterinaryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/location', locationRoutes);
 
 // AI & Chatbot placeholder endpoints
 app.post('/api/ai/detect-image', (req, res) => {

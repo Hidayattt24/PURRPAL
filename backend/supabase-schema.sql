@@ -17,7 +17,6 @@ CREATE TABLE users (
 CREATE TABLE stories (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  recipient VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
   location_name VARCHAR(255),
   location_address TEXT,

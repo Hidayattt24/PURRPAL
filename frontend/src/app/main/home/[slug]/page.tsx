@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
 export default function CreateStoryPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
-  const [recipient, setRecipient] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [location, setLocation] = useState<{
     name: string;
     address: string;
@@ -28,6 +28,7 @@ export default function CreateStoryPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setSelectedImage(reader.result as string);
@@ -36,27 +37,33 @@ export default function CreateStoryPage() {
     }
   };
 
-  // Function to get current location and handle it
   const handleAddLocation = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
-            // Here you would typically make an API call to reverse geocode the coordinates
-            // For demo purposes, we'll just set a default location
+            // Use our proxy endpoint instead of calling Nominatim directly
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/location/reverse-geocode?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+            );
+            
+            if (!response.ok) {
+              throw new Error('Failed to fetch location details');
+            }
+            
+            const data = await response.json();
+            
+            setLocation({
+              name: data.display_name.split(',')[0],
+              address: data.display_name
+            });
+          } catch (error) {
+            console.error("Error getting location details:", error);
+            // Fallback to coordinates if geocoding fails
             setLocation({
               name: "Current Location",
               address: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
             });
-
-            // Here you could also update the selectedImage based on the location
-            // For example, fetch a photo of the location or use street view
-            // For now, we'll just use a placeholder
-            if (!selectedImage) {
-              setSelectedImage("/main/home/placeholder-activity.jpg");
-            }
-          } catch (error) {
-            console.error("Error getting location details:", error);
           }
         },
         (error) => {
@@ -79,29 +86,43 @@ export default function CreateStoryPage() {
         return;
       }
 
+      // Create FormData
+      const formData = new FormData();
+      formData.append('content', message);
+      
+      if (location) {
+        formData.append('location', JSON.stringify(location));
+      }
+      
+      if (imageFile) {
+        formData.append('photo', imageFile);
+      }
+
+      console.log('Submitting story with:', {
+        content: message,
+        hasLocation: !!location,
+        hasImage: !!imageFile
+      });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stories`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          recipient,
-          content: message,
-          location,
-          activity_image_url: selectedImage
-        })
+        body: formData
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create story');
+        throw new Error(data.details || data.error || 'Failed to create story');
       }
 
       // Redirect to home page after successful creation
       router.push('/main/home');
     } catch (error) {
       console.error('Error creating story:', error);
-      alert('Failed to create story. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to create story. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +139,7 @@ export default function CreateStoryPage() {
           <h1 className="text-lg font-medium">Tell Your Story</h1>
           <button 
             className="px-4 py-2 bg-[#FF823C] text-white rounded-full text-sm font-medium disabled:opacity-50"
-            disabled={!message || !recipient || isSubmitting}
+            disabled={!message || isSubmitting}
             onClick={handleSubmit}
           >
             {isSubmitting ? 'Sharing...' : 'Share'}
@@ -129,18 +150,6 @@ export default function CreateStoryPage() {
       {/* Main Form */}
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-8">
         <div className="space-y-6">
-          {/* Recipient Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700">To:</label>
-            <input
-              type="text"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Who is this story for?"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] placeholder:text-neutral-400"
-            />
-          </div>
-
           {/* Message Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-neutral-700">Your Story:</label>
@@ -166,32 +175,12 @@ export default function CreateStoryPage() {
                     <p className="text-xs text-neutral-600">{location.address}</p>
                   </div>
                   <button
-                    onClick={() => {
-                      setLocation(null);
-                      if (!selectedImage) setSelectedImage(null);
-                    }}
+                    onClick={() => setLocation(null)}
                     className="p-1 hover:bg-neutral-200 rounded-full"
                   >
                     <IconX className="w-5 h-5 text-neutral-500" />
                   </button>
                 </div>
-
-                {/* Location Image */}
-                {selectedImage && (
-                  <div className="relative w-full rounded-xl overflow-hidden">
-                    <img
-                      src={selectedImage}
-                      alt="Location"
-                      className="w-full h-auto max-h-[300px] object-contain"
-                    />
-                    <button
-                      onClick={() => setSelectedImage(null)}
-                      className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
-                    >
-                      <IconX className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
               </div>
             ) : (
               <button
@@ -203,10 +192,27 @@ export default function CreateStoryPage() {
               </button>
             )}
 
-            {/* Manual Image Upload (if no location) */}
-            {!location && (
-              <div className="mt-4">
-                <label className="text-sm font-medium text-neutral-700 block mb-2">Or Add a Photo:</label>
+            {/* Photo Upload Section */}
+            <div className="mt-4">
+              <label className="text-sm font-medium text-neutral-700 block mb-2">Add a Photo:</label>
+              {selectedImage ? (
+                <div className="relative w-full rounded-xl overflow-hidden">
+                  <img
+                    src={selectedImage}
+                    alt="Selected"
+                    className="w-full h-auto max-h-[300px] object-contain"
+                  />
+                  <button
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImageFile(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
+                  >
+                    <IconX className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
                 <label className="block w-full border-2 border-dashed border-neutral-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#FF823C] transition-colors">
                   <input
                     type="file"
@@ -217,8 +223,8 @@ export default function CreateStoryPage() {
                   <IconCamera className="w-8 h-8 mx-auto mb-2 text-neutral-400" />
                   <p className="text-sm text-neutral-600">Click to upload a photo</p>
                 </label>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
