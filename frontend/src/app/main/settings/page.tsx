@@ -61,7 +61,7 @@ export default function SettingsPage() {
     setOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
-    router.push('/auth/login');
+    router.push('/');
   };
 
   if (!user) {
