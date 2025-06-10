@@ -2,47 +2,29 @@
 
 import { motion } from "framer-motion";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
-import { 
-  IconPaw, 
-  IconHeartFilled, 
-  IconVaccine, 
-  IconMoodHappy, 
-  IconBowl, 
-  IconSearch,
-  IconMedicalCross,
-  IconDog,
-  IconMoodSmile,
-  IconSun,
-  IconPlane,
-  IconApple,
-  IconStethoscope,
-  IconPill,
-  IconCat,
-  IconHeart,
-  IconFirstAidKit
-} from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import React from 'react';
 
-// Icon mapping - expanded with all possible icons
-const iconComponents: Record<string, React.ReactNode> = {
-  IconPaw: <IconPaw className="w-6 h-6" />,
-  IconHeartFilled: <IconHeartFilled className="w-6 h-6" />,
-  IconVaccine: <IconVaccine className="w-6 h-6" />,
-  IconMoodHappy: <IconMoodHappy className="w-6 h-6" />,
-  IconBowl: <IconBowl className="w-6 h-6" />,
-  IconMedicalCross: <IconMedicalCross className="w-6 h-6" />,
-  IconDog: <IconDog className="w-6 h-6" />,
-  IconMoodSmile: <IconMoodSmile className="w-6 h-6" />,
-  IconSun: <IconSun className="w-6 h-6" />,
-  IconPlane: <IconPlane className="w-6 h-6" />,
-  IconApple: <IconApple className="w-6 h-6" />,
-  IconStethoscope: <IconStethoscope className="w-6 h-6" />,
-  IconPill: <IconPill className="w-6 h-6" />,
-  IconCat: <IconCat className="w-6 h-6" />,
-  IconHeart: <IconHeart className="w-6 h-6" />,
-  IconFirstAidKit: <IconFirstAidKit className="w-6 h-6" />
+// Emoji mapping for modules
+const emojiMap: Record<string, string> = {
+  'paw': '🐾',
+  'heart': '❤️',
+  'vaccine': '💉',
+  'happy': '😊',
+  'bowl': '🍽️',
+  'medical': '⚕️',
+  'dog': '🐕',
+  'smile': '😃',
+  'sun': '☀️',
+  'plane': '✈️',
+  'apple': '🍎',
+  'stethoscope': '🏥',
+  'pill': '💊',
+  'cat': '🐱',
+  'firstaid': '🚑',
+  'default': '🐱'
 };
 
 interface Module {
@@ -88,17 +70,11 @@ export default function ModulPage() {
     module.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Helper function to get icon component
-  const getIconComponent = (iconName: string) => {
-    // Remove any "icon-" prefix if it exists
-    const normalizedIconName = iconName.replace(/^icon-/i, '');
-    // Convert to proper case (e.g., "medical-cross" to "IconMedicalCross")
-    const properIconName = 'Icon' + normalizedIconName
-      .split('-')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join('');
-    
-    return iconComponents[properIconName] || iconComponents.IconPaw;
+  // Helper function to get emoji
+  const getEmoji = (iconName: string) => {
+    // Remove any "icon-" or "Icon" prefix and convert to lowercase
+    const normalizedIconName = iconName.replace(/^(icon-|Icon)/i, '').toLowerCase();
+    return emojiMap[normalizedIconName] || emojiMap.default;
   };
 
   return (
@@ -174,8 +150,8 @@ export default function ModulPage() {
                 <div className="bg-white rounded-2xl border border-neutral-200 p-6 hover:border-[#FF823C] transition-all duration-300 group h-full">
                   {/* Module Header */}
                   <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${module.color} text-white`}>
-                      {getIconComponent(module.icon)}
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center text-2xl`}>
+                      {getEmoji(module.icon)}
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-neutral-800 group-hover:text-[#FF823C] transition-colors">

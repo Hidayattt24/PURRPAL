@@ -112,50 +112,11 @@ export function AuthForm({ mode, onSubmit, error }: AuthFormProps) {
                             )}
                         </div>
 
-                        {mode === "login" && (
-                            <div className="text-right">
-                                <Link
-                                    href="/auth/forgot-password"
-                                    className="text-sm text-gray-600 hover:text-[#FF7F50]"
-                                >
-                                    Forgot your Password?
-                                </Link>
-                            </div>
-                        )}
-
                         <Button
                             type="submit"
                             className="w-full bg-[#FF7F50] hover:bg-[#FF6347]"
                         >
                             {mode === "login" ? "Login" : "Sign up"}
-                        </Button>
-
-                        <div className="relative my-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white px-2 text-gray-500">or</span>
-                            </div>
-                        </div>
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                                // Handle Google login/signup
-                            }}
-                        >
-                            <div className="relative w-5 h-5 mr-2">
-                                <Image
-                                    src="/auth/login/google.svg"
-                                    alt="Google"
-                                    fill
-                                    style={{ objectFit: 'contain' }}
-                                />
-                            </div>
-                            Continue with Google
                         </Button>
 
                         <p className="text-center text-sm text-gray-600">
