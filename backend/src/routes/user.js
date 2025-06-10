@@ -95,11 +95,39 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // Update profile
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { full_name, role, location, bio } = req.body;
+    const { username, full_name, role, location, bio } = req.body;
+
+    // Validate username format if it's being updated
+    if (username) {
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        return res.status(400).json({ 
+          error: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores' 
+        });
+      }
+
+      // Check if username is already taken (excluding current user)
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .neq('id', req.userId)
+        .single();
+
+      if (existingUser) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+    }
+
+    // Validate full name
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({ error: 'Full name is required' });
+    }
 
     const { data, error } = await supabase
       .from('users')
       .update({ 
+        username,
         full_name, 
         role, 
         location, 

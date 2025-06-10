@@ -20,35 +20,86 @@ export default function HomePage() {
   const router = useRouter();
   const shadowColor = resolvedTheme === "dark" ? "white" : "#FF823C";
 
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      
+      // Update localStorage with fresh data
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return userData;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      return null;
+    }
+  };
+
+  const fetchStories = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stories`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch stories');
+      
+      const data = await response.json();
+      setStories(data);
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    }
+  };
+
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user');
-    if (!userData) {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
       router.push('/auth/login');
       return;
     }
-    setUser(JSON.parse(userData));
 
-    // Fetch stories from backend
-    const fetchStories = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stories`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch stories');
-        
-        const data = await response.json();
-        setStories(data);
-      } catch (error) {
-        console.error('Error fetching stories:', error);
-      }
+    // Initial fetch of user data and stories
+    fetchUserProfile(token);
+    fetchStories(token);
+
+    // Listen for user data updates
+    const handleUserDataUpdate = async (event: CustomEvent<any>) => {
+      // When user data is updated elsewhere, fetch fresh data from the server
+      await fetchUserProfile(token);
     };
 
-    fetchStories();
+    window.addEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+    };
   }, [router]);
+
+  // Refresh data periodically
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const refreshInterval = setInterval(() => {
+      fetchUserProfile(token);
+      fetchStories(token);
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -63,9 +114,12 @@ export default function HomePage() {
             className="w-full h-full object-cover"
           />
         </div>
-        <h1 className="text-2xl font-medium text-neutral-800">
-          Hi, <span className="text-[#FF823C]">@{user?.username || 'User'}</span>
-        </h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-medium text-neutral-800">
+            Hi, <span className="text-[#FF823C]">@{user?.username || 'User'}</span>
+          </h1>
+          <p className="text-sm text-neutral-600">{user?.full_name}</p>
+        </div>
       </div>
 
       {/* Create Story Title */}

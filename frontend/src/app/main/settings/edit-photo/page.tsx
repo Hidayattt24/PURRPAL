@@ -1,22 +1,57 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { IconChevronLeft, IconUpload, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function EditPhotoPage() {
+  const router = useRouter();
+  const [currentPhoto, setCurrentPhoto] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Fetch user profile to get current photo
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const userData = await response.json();
+        setCurrentPhoto(userData.avatar_url);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [router]);
+
   const validateFile = (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
-      return "File type not supported. Please upload a JPG, PNG, or GIF file.";
+      return "File type not supported. Please upload a JPG, PNG, GIF, or WebP file.";
     }
 
     if (file.size > maxSize) {
@@ -49,11 +84,108 @@ export default function EditPhotoPage() {
     fileInputRef.current?.click();
   };
 
-  const handleRemovePhoto = () => {
-    setPreviewUrl(null);
+  const handleRemovePhoto = async () => {
     setError("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      // Update profile with null avatar_url
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ avatar_url: null })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove photo');
+      }
+
+      setPreviewUrl(null);
+      setCurrentPhoto(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Update local storage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        localStorage.setItem('user', JSON.stringify({
+          ...parsedUser,
+          avatar_url: null
+        }));
+      }
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      setError('Failed to remove photo');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!previewUrl) return;
+
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const file = fileInputRef.current?.files?.[0];
+      if (!file) {
+        throw new Error('No file selected');
+      }
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      // Upload photo
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/photo`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload photo');
+      }
+
+      // Update local storage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        localStorage.setItem('user', JSON.stringify({
+          ...parsedUser,
+          avatar_url: data.avatar_url
+        }));
+      }
+
+      // Redirect back to settings
+      router.push('/main/settings');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      setError(error instanceof Error ? error.message : 'Failed to upload photo');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -95,7 +227,7 @@ export default function EditPhotoPage() {
                   />
                 ) : (
                   <Image
-                    src="/main/home/placeholder-avatar.jpg"
+                    src={currentPhoto || "/main/home/placeholder-avatar.jpg"}
                     alt="Current"
                     width={160}
                     height={160}
@@ -111,35 +243,49 @@ export default function EditPhotoPage() {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept="image/jpeg,image/png,image/gif"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 className="hidden"
               />
 
               <motion.button
                 onClick={handleUploadClick}
+                disabled={isLoading}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconUpload className="w-5 h-5" />
-                Upload New Photo
+                {isLoading ? 'Uploading...' : 'Upload New Photo'}
               </motion.button>
 
               {previewUrl && (
                 <motion.button
-                  onClick={handleRemovePhoto}
+                  onClick={handleSubmit}
+                  disabled={isLoading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-medium hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-green-500 text-white rounded-2xl font-medium hover:bg-green-600 transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : 'Save Photo'}
+                </motion.button>
+              )}
+
+              {(currentPhoto || previewUrl) && (
+                <motion.button
+                  onClick={handleRemovePhoto}
+                  disabled={isLoading}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-medium hover:bg-red-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <IconTrash className="w-5 h-5" />
-                  Remove Photo
+                  {isLoading ? 'Removing...' : 'Remove Photo'}
                 </motion.button>
               )}
             </div>
 
             <div className="text-sm text-gray-500 text-center">
-              <p>Supported formats: JPG, PNG, GIF</p>
+              <p>Supported formats: JPG, PNG, GIF, WebP</p>
               <p>Maximum file size: 5MB</p>
             </div>
           </div>

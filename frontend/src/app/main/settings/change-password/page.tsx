@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { IconChevronLeft, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ChangePasswordPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -20,6 +22,15 @@ export default function ChangePasswordPage() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+    }
+  }, [router]);
 
   const validatePassword = (password: string) => {
     const hasNumber = /\d/.test(password);
@@ -36,45 +47,81 @@ export default function ChangePasswordPage() {
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Reset states
     setError("");
     setSuccess(false);
+    setIsLoading(true);
 
-    // Basic validation
-    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
-      setError("All fields are required");
-      return;
+    try {
+      // Basic validation
+      if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+        throw new Error("All fields are required");
+      }
+
+      if (formData.newPassword !== formData.confirmPassword) {
+        throw new Error("New passwords do not match");
+      }
+
+      if (formData.newPassword === formData.currentPassword) {
+        throw new Error("New password must be different from current password");
+      }
+
+      // Password strength validation
+      const validation = validatePassword(formData.newPassword);
+      if (!validation.isValid) {
+        const errors = [];
+        if (validation.errors.length) errors.push("at least 8 characters");
+        if (validation.errors.number) errors.push("at least one number");
+        if (validation.errors.specialChar) errors.push("at least one special character");
+        
+        throw new Error(`Password must contain ${errors.join(", ")}`);
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      // Send request to backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/password`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change password');
+      }
+
+      setSuccess(true);
+      setFormData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+
+      // Redirect back to settings after a short delay
+      setTimeout(() => {
+        router.push('/main/settings');
+      }, 2000);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setError(error instanceof Error ? error.message : 'Failed to change password');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError("New passwords do not match");
-      return;
-    }
-
-    if (formData.newPassword === formData.currentPassword) {
-      setError("New password must be different from current password");
-      return;
-    }
-
-    // Password strength validation
-    const validation = validatePassword(formData.newPassword);
-    if (!validation.isValid) {
-      const errors = [];
-      if (validation.errors.length) errors.push("at least 8 characters");
-      if (validation.errors.number) errors.push("at least one number");
-      if (validation.errors.specialChar) errors.push("at least one special character");
-      
-      setError(`Password must contain ${errors.join(", ")}`);
-      return;
-    }
-
-    // If all validations pass
-    setSuccess(true);
-    // Handle password change here
-    console.log("Password change submitted:", formData);
   };
 
   const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
@@ -111,7 +158,7 @@ export default function ChangePasswordPage() {
 
             {success && (
               <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm">
-                Password successfully changed!
+                Password successfully changed! Redirecting...
               </div>
             )}
 
@@ -206,11 +253,12 @@ export default function ChangePasswordPage() {
 
             <motion.button
               type="submit"
+              disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors"
+              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
             >
-              Change Password
+              {isLoading ? 'Changing Password...' : 'Change Password'}
             </motion.button>
           </form>
         </div>

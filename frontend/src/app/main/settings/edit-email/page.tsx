@@ -1,51 +1,124 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { IconChevronLeft, IconMail } from "@tabler/icons-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { updateUserData } from "@/lib/utils/user";
 
 export default function EditEmailPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    currentEmail: "dwight@dundermifflin.com",
+    currentEmail: "",
     newEmail: "",
     password: ""
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in and get current email
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const userData = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          currentEmail: userData.email
+        }));
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [router]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Reset states
     setError("");
     setSuccess(false);
+    setIsLoading(true);
 
-    // Basic validation
-    if (!formData.newEmail || !formData.password) {
-      setError("All fields are required");
-      return;
+    try {
+      // Basic validation
+      if (!formData.newEmail || !formData.password) {
+        throw new Error("All fields are required");
+      }
+
+      if (!validateEmail(formData.newEmail)) {
+        throw new Error("Please enter a valid email address");
+      }
+
+      if (formData.newEmail === formData.currentEmail) {
+        throw new Error("New email must be different from current email");
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      // Send request to backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/email`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          newEmail: formData.newEmail,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update email');
+      }
+
+      // Update user data in localStorage and trigger update event
+      updateUserData({ email: formData.newEmail });
+
+      setSuccess(true);
+
+      // Redirect back to settings after a short delay
+      setTimeout(() => {
+        router.push('/main/settings');
+      }, 2000);
+    } catch (error) {
+      console.error('Error updating email:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update email');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!validateEmail(formData.newEmail)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
-    if (formData.newEmail === formData.currentEmail) {
-      setError("New email must be different from current email");
-      return;
-    }
-
-    // Handle email change here
-    console.log("Email change submitted:", formData);
-    setSuccess(true);
   };
 
   return (
@@ -75,7 +148,7 @@ export default function EditEmailPage() {
 
             {success && (
               <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm">
-                Email change request has been sent. Please check your new email for verification.
+                Email updated successfully! Redirecting...
               </div>
             )}
 
@@ -130,11 +203,12 @@ export default function EditEmailPage() {
 
             <motion.button
               type="submit"
+              disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors"
+              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
             >
-              Change Email Address
+              {isLoading ? 'Updating Email...' : 'Change Email Address'}
             </motion.button>
           </form>
         </div>

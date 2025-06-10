@@ -1,13 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { IconChevronRight, IconEdit, IconLock, IconMail, IconBell } from "@tabler/icons-react";
+import { IconChevronRight, IconEdit, IconLock, IconMail, IconLogout } from "@tabler/icons-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import * as Dialog from '@radix-ui/react-dialog';
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  useEffect(() => {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Listen for user data updates
+    const handleUserDataUpdate = (event: CustomEvent<any>) => {
+      setUser(event.detail);
+    };
+
+    window.addEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+
+    // Fetch user profile data
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('userDataUpdated', handleUserDataUpdate as EventListener);
+    };
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    router.push('/auth/login');
+  };
+
+  if (!user) {
+    return <div className="min-h-screen bg-gradient-to-b from-white to-orange-50/30 p-4 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-orange-50/30 p-4 sm:p-6">
@@ -25,7 +85,7 @@ export default function SettingsPage() {
               <div className="relative">
                 <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-green-100 flex items-center justify-center">
                   <Image
-                    src="/main/home/placeholder-avatar.jpg"
+                    src={user.avatar_url || "/main/home/placeholder-avatar.jpg"}
                     alt="Profile"
                     width={128}
                     height={128}
@@ -42,9 +102,9 @@ export default function SettingsPage() {
                   </motion.button>
                 </Link>
               </div>
-              <h2 className="text-xl font-semibold mt-4">Dwight Schrute</h2>
-              <p className="text-gray-500 text-sm">UX | Product Designer</p>
-              <p className="text-gray-500 text-sm mt-1">Scranton, Pennsylvania</p>
+              <h2 className="text-xl font-semibold mt-4">{user.full_name}</h2>
+              <p className="text-gray-500 text-sm">{user.role}</p>
+              <p className="text-gray-500 text-sm mt-1">{user.location}</p>
             </div>
           </div>
 
@@ -93,7 +153,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex flex-col">
                       <span className="font-medium">Email</span>
-                      <span className="text-sm text-gray-500">dwight@dundermifflin.com</span>
+                      <span className="text-sm text-gray-500">{user.email}</span>
                     </div>
                   </div>
                   <IconChevronRight className="w-5 h-5 text-gray-400" />
@@ -103,13 +163,49 @@ export default function SettingsPage() {
           </div>
 
           {/* Logout Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-4 bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 transition-colors"
-          >
-            Log Out
-          </motion.button>
+          <Dialog.Root open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+            <Dialog.Trigger asChild>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <IconLogout className="w-5 h-5" />
+                Log Out
+              </motion.button>
+            </Dialog.Trigger>
+
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" />
+              <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-8 shadow-xl z-50 w-[90%] max-w-md">
+                <Dialog.Title className="text-xl font-semibold mb-4">
+                  Confirm Logout
+                </Dialog.Title>
+                <Dialog.Description className="text-gray-600 mb-6">
+                  Are you sure you want to log out of your account?
+                </Dialog.Description>
+
+                <div className="flex gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowLogoutDialog(false)}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleLogout}
+                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Log Out
+                  </motion.button>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
       </div>
     </div>
