@@ -8,6 +8,7 @@ const modulesRoutes = require('./routes/modules');
 const veterinaryRoutes = require('./routes/veterinary');
 const userRoutes = require('./routes/user');
 const locationRoutes = require('./routes/location');
+const chatbotRoutes = require('./routes/chatbot'); // Add chatbot routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -145,28 +146,6 @@ app.get('/docs', (req, res) => {
 }</pre>
         </div>
 
-        <div class="endpoint">
-            <span class="method put">PUT</span>
-            <span class="path">/api/users/password</span>
-            <p>Change password (Protected)</p>
-            <pre>
-{
-    "currentPassword": "old_password",
-    "newPassword": "new_password"
-}</pre>
-        </div>
-
-        <div class="endpoint">
-            <span class="method put">PUT</span>
-            <span class="path">/api/users/email</span>
-            <p>Update email (Protected)</p>
-            <pre>
-{
-    "newEmail": "new@example.com",
-    "password": "current_password"
-}</pre>
-        </div>
-
         <h2>📝 Stories</h2>
         
         <div class="endpoint">
@@ -179,16 +158,6 @@ app.get('/docs', (req, res) => {
             <span class="method post">POST</span>
             <span class="path">/api/stories</span>
             <p>Create new story (Protected)</p>
-            <pre>
-{
-    "recipient": "Pet Name",
-    "content": "Story content",
-    "location": {
-        "name": "Location Name",
-        "address": "Full Address"
-    },
-    "activity_image_url": "image_url"
-}</pre>
         </div>
 
         <h2>📚 Education Modules</h2>
@@ -214,7 +183,37 @@ app.get('/docs', (req, res) => {
             <p>Optional query parameter: <code>?city=Jakarta</code></p>
         </div>
 
-        <h2>🤖 AI & Chatbot</h2>
+        <h2>🤖 Chatbot (NEW)</h2>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <span class="path">/api/chatbot/message</span>
+            <p>Send message to PurrPal AI (Protected)</p>
+            <pre>
+{
+    "message": "Kucing saya tidak mau makan, apa yang harus saya lakukan?"
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/chatbot/history</span>
+            <p>Get conversation history (Protected)</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method delete">DELETE</span>
+            <span class="path">/api/chatbot/history</span>
+            <p>Clear conversation history (Protected)</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/chatbot/health</span>
+            <p>Check chatbot health status</p>
+        </div>
+
+        <h2>🤖 AI Detection</h2>
         
         <div class="endpoint">
             <span class="method post">POST</span>
@@ -223,16 +222,6 @@ app.get('/docs', (req, res) => {
             <pre>
 {
     "image_url": "url_to_image"
-}</pre>
-        </div>
-
-        <div class="endpoint">
-            <span class="method post">POST</span>
-            <span class="path">/api/chatbot/message</span>
-            <p>Send message to chatbot (Protected)</p>
-            <pre>
-{
-    "message": "Your question here"
 }</pre>
         </div>
 
@@ -257,7 +246,9 @@ app.get('/', (req, res) => {
       users: '/api/users',
       stories: '/api/stories',
       modules: '/api/modules',
-      veterinary: '/api/veterinary-services'
+      veterinary: '/api/veterinary-services',
+      chatbot: '/api/chatbot',
+      ai: '/api/ai'
     }
   });
 });
@@ -269,8 +260,9 @@ app.use('/api/modules', modulesRoutes);
 app.use('/api/veterinary-services', veterinaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
+app.use('/api/chatbot', chatbotRoutes); // Add chatbot routes
 
-// AI & Chatbot placeholder endpoints
+// AI Detection placeholder endpoint
 app.post('/api/ai/detect-image', (req, res) => {
   res.json({ 
     status: 'todo',
@@ -278,14 +270,6 @@ app.post('/api/ai/detect-image', (req, res) => {
     diagnosis: 'Kucing Anda terlihat sehat',
     recommendations: 'Lanjutkan perawatan rutin',
     accuracy: '85'
-  });
-});
-
-app.post('/api/chatbot/message', (req, res) => {
-  res.json({
-    status: 'todo',
-    message: 'Chatbot endpoint - to be implemented',
-    response: 'Maaf, fitur chatbot masih dalam pengembangan.'
   });
 });
 
