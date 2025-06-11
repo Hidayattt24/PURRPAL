@@ -8,7 +8,8 @@ const modulesRoutes = require('./routes/modules');
 const veterinaryRoutes = require('./routes/veterinary');
 const userRoutes = require('./routes/user');
 const locationRoutes = require('./routes/location');
-const chatbotRoutes = require('./routes/chatbot'); // Add chatbot routes
+const chatbotRoutes = require('./routes/chatbot');
+const aiRoutes = require('./routes/ai'); // Add AI routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -86,6 +87,14 @@ app.get('/docs', (req, res) => {
                 padding: 10px;
                 border-radius: 5px;
                 margin: 10px 0;
+            }
+            .new-badge {
+                background: #28a745;
+                color: white;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 0.8em;
+                margin-left: 10px;
             }
         </style>
     </head>
@@ -183,7 +192,7 @@ app.get('/docs', (req, res) => {
             <p>Optional query parameter: <code>?city=Jakarta</code></p>
         </div>
 
-        <h2>🤖 Chatbot (NEW)</h2>
+        <h2>🤖 Chatbot</h2>
         
         <div class="endpoint">
             <span class="method post">POST</span>
@@ -213,12 +222,55 @@ app.get('/docs', (req, res) => {
             <p>Check chatbot health status</p>
         </div>
 
-        <h2>🤖 AI Detection</h2>
+        <h2>🧠 AI Detection <span class="new-badge">NEW</span></h2>
         
         <div class="endpoint">
             <span class="method post">POST</span>
+            <span class="path">/api/ai/predict-symptoms</span>
+            <span class="new-badge">NEW</span>
+            <p>Predict cat disease based on symptoms questionnaire (Protected)</p>
+            <pre>
+{
+    "cat_info": {
+        "name": "Fluffy",
+        "age": "2 tahun",
+        "gender": "female",
+        "weight": 4.5,
+        "body_temperature": 39.0,
+        "duration_days": 5,
+        "heart_rate": 130
+    },
+    "questionnaire": {
+        "cough": true,
+        "breathingDifficulty": false,
+        "fever": true,
+        "discomfort": true,
+        "appetiteLoss": true,
+        "weightLoss": false,
+        "vomiting": false,
+        "diarrhea": false
+    }
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/ai/health</span>
+            <span class="new-badge">NEW</span>
+            <p>Check AI services health status</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/ai/info</span>
+            <span class="new-badge">NEW</span>
+            <p>Get information about available AI services</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method post">POST</span>
             <span class="path">/api/ai/detect-image</span>
-            <p>AI image detection (Protected)</p>
+            <p>AI image detection (Coming Soon)</p>
             <pre>
 {
     "image_url": "url_to_image"
@@ -227,6 +279,7 @@ app.get('/docs', (req, res) => {
 
         <footer style="margin-top: 50px; text-align: center; color: #666;">
             <p>PurrPal API v1.0.0 | Made with ❤️ for cats</p>
+            <p><strong>New:</strong> AI-powered symptom prediction now available!</p>
         </footer>
     </body>
     </html>
@@ -248,7 +301,7 @@ app.get('/', (req, res) => {
       modules: '/api/modules',
       veterinary: '/api/veterinary-services',
       chatbot: '/api/chatbot',
-      ai: '/api/ai'
+      ai: '/api/ai' // Updated to use new AI routes
     }
   });
 });
@@ -260,18 +313,8 @@ app.use('/api/modules', modulesRoutes);
 app.use('/api/veterinary-services', veterinaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
-app.use('/api/chatbot', chatbotRoutes); // Add chatbot routes
-
-// AI Detection placeholder endpoint
-app.post('/api/ai/detect-image', (req, res) => {
-  res.json({ 
-    status: 'todo',
-    message: 'AI image detection endpoint - to be implemented',
-    diagnosis: 'Kucing Anda terlihat sehat',
-    recommendations: 'Lanjutkan perawatan rutin',
-    accuracy: '85'
-  });
-});
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/ai', aiRoutes); // Add AI routes
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -281,4 +324,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API Documentation available at http://localhost:${PORT}/docs`);
 });
