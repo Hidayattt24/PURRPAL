@@ -17,11 +17,29 @@ interface CatInfo {
   name: string;
   age: string;
   gender: "male" | "female" | "";
+  weight?: number;
+  body_temperature?: number;
+  duration_days?: number;
+  heart_rate?: number;
 }
 
 interface Question {
   id: string;
   text: string;
+}
+
+interface PredictionResponse {
+  success: boolean;
+  data: {
+    predicted_disease: string;
+    confidence: number;
+    diagnosis: string;
+    recommendations: string;
+    accuracy: string;
+    cat_info: any;
+    active_symptoms: string[];
+    all_probabilities: Record<string, number>;
+  };
 }
 
 const questions: Question[] = [
@@ -72,6 +90,14 @@ const questions: Question[] = [
   {
     id: "breathingSound",
     text: "Apakah napas kucing Anda berbunyi seperti siulan atau desahan tinggi?"
+  },
+  {
+    id: "vomiting",
+    text: "Apakah kucing Anda mengalami muntah?"
+  },
+  {
+    id: "diarrhea",
+    text: "Apakah kucing Anda mengalami diare?"
   }
 ];
 
@@ -88,7 +114,11 @@ export default function AIPage() {
   const [catInfo, setCatInfo] = useState<CatInfo>({
     name: "",
     age: "",
-    gender: ""
+    gender: "",
+    weight: 4.0,
+    body_temperature: 38.5,
+    duration_days: 3,
+    heart_rate: 120
   });
   const [detectionMode, setDetectionMode] = useState<DetectionMode>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -96,9 +126,8 @@ export default function AIPage() {
   const [answers, setAnswers] = useState<Record<string, boolean | null>>({});
   const [showResult, setShowResult] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [diagnosis, setDiagnosis] = useState("");
-  const [recommendations, setRecommendations] = useState("");
-  const [accuracy, setAccuracy] = useState("");
+  const [predictionResult, setPredictionResult] = useState<PredictionResponse["data"] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAnswer = (questionId: string, answer: boolean) => {
     setAnswers(prev => ({ ...prev, [questionId]: answer }));
@@ -150,20 +179,21 @@ export default function AIPage() {
     
     try {
       setIsAnalyzing(true);
+      setError(null);
       
-      // Convert base64 string to blob for upload
-      const base64Data = selectedImage.split(',')[1];
-      const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append('image', blob, 'cat_image.jpg');
-      formData.append('catInfo', JSON.stringify(catInfo));
-
-      // Make API call to backend
-      const response = await fetch('/api/classify-image', {
+      // For now, call the placeholder image detection endpoint
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/ai/detect-image`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          image_url: selectedImage,
+          cat_info: catInfo
+        }),
       });
 
       if (!response.ok) {
@@ -172,15 +202,22 @@ export default function AIPage() {
 
       const result = await response.json();
       
-      // Update state with results (you'll need to add these states)
-      setDiagnosis(result.diagnosis);
-      setRecommendations(result.recommendations);
-      setAccuracy(result.accuracy);
+      // Set placeholder result until computer vision is implemented
+      setPredictionResult({
+        predicted_disease: "Pemeriksaan Visual",
+        confidence: 85,
+        diagnosis: result.data.diagnosis,
+        recommendations: result.data.recommendations,
+        accuracy: result.data.accuracy,
+        cat_info: catInfo,
+        active_symptoms: ["Pemeriksaan visual"],
+        all_probabilities: { "Sehat": 85, "Perlu Perhatian": 15 }
+      });
       
       setShowResult(true);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      alert('Terjadi kesalahan saat menganalisis gambar. Silakan coba lagi.');
+      setError('Terjadi kesalahan saat menganalisis gambar. Silakan coba lagi.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -193,27 +230,102 @@ export default function AIPage() {
       return;
     }
 
-    setIsAnalyzing(true);
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    setIsAnalyzing(false);
-    setShowResult(true);
+    try {
+      setIsAnalyzing(true);
+      setError(null);
+
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to use AI features');
+      }
+
+      // Prepare request data
+      const requestData = {
+        cat_info: {
+          name: catInfo.name,
+          age: catInfo.age,
+          gender: catInfo.gender,
+          weight: catInfo.weight || 4.0,
+          body_temperature: catInfo.body_temperature || 38.5,
+          duration_days: catInfo.duration_days || 3,
+          heart_rate: catInfo.heart_rate || 120
+        },
+        questionnaire: answers
+      };
+
+      console.log('Sending prediction request:', requestData);
+
+      // Call AI prediction API
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/ai/predict-symptoms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result: PredictionResponse = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.data?.toString() || 'Prediction failed');
+      }
+
+      console.log('Prediction result:', result);
+      
+      setPredictionResult(result.data);
+      setShowResult(true);
+
+    } catch (error) {
+      console.error('Error in questionnaire submission:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('login')) {
+          setError('Silakan login terlebih dahulu untuk menggunakan fitur AI.');
+        } else if (error.message.includes('unavailable')) {
+          setError('Layanan AI sedang tidak tersedia. Silakan coba lagi nanti.');
+        } else {
+          setError(`Terjadi kesalahan: ${error.message}`);
+        }
+      } else {
+        setError('Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.');
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handlePrint = () => {
+    if (!predictionResult) return;
+
     const printContent = `
-      Data Anda:
+      Data Kucing:
       Nama: ${catInfo.name}
       Usia: ${catInfo.age}
       Jenis Kelamin: ${catInfo.gender === 'male' ? 'Jantan' : 'Betina'}
 
       Hasil Diagnosis:
-      ${diagnosis}
+      Penyakit: ${predictionResult.predicted_disease}
+      Tingkat Keyakinan: ${predictionResult.confidence}%
+      
+      Detail Diagnosis:
+      ${predictionResult.diagnosis.replace(/<[^>]*>/g, '')}
 
       Rekomendasi Penanganan:
-      ${recommendations}
+      ${predictionResult.recommendations.replace(/<[^>]*>/g, '')}
+
+      Gejala yang Terdeteksi:
+      ${predictionResult.active_symptoms.join(', ')}
 
       Catatan Penting:
-      Hasil diagnosa ini memiliki tingkat akurasi ${accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
+      Hasil diagnosa ini memiliki tingkat akurasi ${predictionResult.accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
       Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
     `;
 
@@ -232,7 +344,7 @@ export default function AIPage() {
       `);
       printWindow.document.write('</style></head><body>');
       printWindow.document.write('<div class="header"><h1>Hasil Diagnosa PurrPal AI</h1></div>');
-      printWindow.document.write(printContent.split('\\n').map(line => `<p>${line}</p>`).join(''));
+      printWindow.document.write(printContent.split('\n').map(line => `<p>${line}</p>`).join(''));
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
@@ -259,7 +371,7 @@ export default function AIPage() {
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <label className="block text-base font-medium text-gray-700 mb-2">
-              Nama Kucing
+              Nama Kucing *
             </label>
             <input
               type="text"
@@ -272,7 +384,7 @@ export default function AIPage() {
 
           <div>
             <label className="block text-base font-medium text-gray-700 mb-2">
-              Umur
+              Umur *
             </label>
             <input
               type="text"
@@ -283,9 +395,41 @@ export default function AIPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-base font-medium text-gray-700 mb-2">
+              Berat Badan (kg)
+            </label>
+            <input
+              type="number"
+              value={catInfo.weight || ''}
+              onChange={(e) => setCatInfo({ ...catInfo, weight: parseFloat(e.target.value) || 4.0 })}
+              className="w-full px-6 py-4 rounded-xl text-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF823C] focus:border-transparent"
+              placeholder="4.0"
+              step="0.1"
+              min="0.5"
+              max="20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-gray-700 mb-2">
+              Suhu Tubuh (°C)
+            </label>
+            <input
+              type="number"
+              value={catInfo.body_temperature || ''}
+              onChange={(e) => setCatInfo({ ...catInfo, body_temperature: parseFloat(e.target.value) || 38.5 })}
+              className="w-full px-6 py-4 rounded-xl text-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF823C] focus:border-transparent"
+              placeholder="38.5"
+              step="0.1"
+              min="35"
+              max="42"
+            />
+          </div>
+
           <div className="md:col-span-2">
             <label className="block text-base font-medium text-gray-700 mb-2">
-              Jenis Kelamin
+              Jenis Kelamin *
             </label>
             <div className="grid grid-cols-2 gap-6">
               {["male", "female"].map((gender) => (
@@ -366,6 +510,9 @@ export default function AIPage() {
             <p className="text-gray-600 text-sm">
               Upload foto kucing Anda untuk mendeteksi ras dan potensi penyakit
             </p>
+            <div className="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
+              Coming Soon
+            </div>
           </div>
         </motion.button>
 
@@ -384,6 +531,9 @@ export default function AIPage() {
             <p className="text-gray-600 text-sm">
               Jawab beberapa pertanyaan untuk analisis kesehatan kucing
             </p>
+            <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+              Available Now
+            </div>
           </div>
         </motion.button>
       </div>
@@ -444,7 +594,7 @@ export default function AIPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {isAnalyzing ? "Menganalisis..." : "Analisis Gambar"}
+              {isAnalyzing ? "Menganalisis..." : "Analisis Gambar (Demo)"}
             </motion.button>
           )}
         </div>
@@ -452,99 +602,122 @@ export default function AIPage() {
     </div>
   );
 
-  const renderResults = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 shadow-lg">
-        <div className="text-center py-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="space-y-6"
-          >
-            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
-              <IconPaw className="w-8 h-8 text-green-500" />
-            </div>
-            <h3 className="text-2xl font-semibold text-neutral-800">Hasil Analisis</h3>
+  const renderResults = () => {
+    if (!predictionResult) return null;
 
-            {/* Data Section */}
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-neutral-50 p-4 rounded-xl">
-                  <p className="text-sm text-neutral-600">Nama</p>
-                  <p className="font-medium text-neutral-800">{catInfo.name}</p>
-                </div>
-                <div className="bg-neutral-50 p-4 rounded-xl">
-                  <p className="text-sm text-neutral-600">Usia</p>
-                  <p className="font-medium text-neutral-800">{catInfo.age}</p>
-                </div>
-                <div className="bg-neutral-50 p-4 rounded-xl">
-                  <p className="text-sm text-neutral-600">Jenis Kelamin</p>
-                  <p className="font-medium text-neutral-800">{catInfo.gender === 'male' ? 'Jantan' : 'Betina'}</p>
-                </div>
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <div className="text-center py-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-6"
+            >
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+                <IconPaw className="w-8 h-8 text-green-500" />
               </div>
+              <h3 className="text-2xl font-semibold text-neutral-800">Hasil Analisis</h3>
 
-              {/* Diagnosis Section */}
-              <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200">
-                <h4 className="font-semibold text-lg text-neutral-800 mb-4">Hasil Diagnosis:</h4>
-                <div className="space-y-4">
-                  <p className="text-neutral-700">{diagnosis}</p>
+              {/* Data Section */}
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-neutral-50 p-4 rounded-xl">
+                    <p className="text-sm text-neutral-600">Nama</p>
+                    <p className="font-medium text-neutral-800">{catInfo.name}</p>
+                  </div>
+                  <div className="bg-neutral-50 p-4 rounded-xl">
+                    <p className="text-sm text-neutral-600">Usia</p>
+                    <p className="font-medium text-neutral-800">{catInfo.age}</p>
+                  </div>
+                  <div className="bg-neutral-50 p-4 rounded-xl">
+                    <p className="text-sm text-neutral-600">Jenis Kelamin</p>
+                    <p className="font-medium text-neutral-800">{catInfo.gender === 'male' ? 'Jantan' : 'Betina'}</p>
+                  </div>
+                </div>
+
+                {/* Disease & Confidence */}
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                  <h4 className="font-semibold text-lg text-blue-800 mb-2">Prediksi Penyakit:</h4>
+                  <p className="text-xl font-bold text-blue-900">{predictionResult.predicted_disease}</p>
+                  <p className="text-blue-700 mt-2">Tingkat Keyakinan: {predictionResult.confidence}%</p>
+                </div>
+
+                {/* Diagnosis Section */}
+                <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200">
+                  <h4 className="font-semibold text-lg text-neutral-800 mb-4">Detail Diagnosis:</h4>
+                  <div className="prose prose-neutral text-neutral-700">
+                    <div dangerouslySetInnerHTML={{ __html: predictionResult.diagnosis }} />
+                  </div>
+                </div>
+                
+                {/* Recommendations Section */}
+                <div className="bg-green-50 p-6 rounded-xl border border-green-200">
+                  <h4 className="font-semibold text-lg text-green-800 mb-4">Rekomendasi Penanganan:</h4>
+                  <div className="prose prose-green text-green-700">
+                    <div dangerouslySetInnerHTML={{ __html: predictionResult.recommendations }} />
+                  </div>
+                </div>
+
+                {/* Active Symptoms */}
+                {predictionResult.active_symptoms.length > 0 && (
+                  <div className="bg-orange-50 p-6 rounded-xl border border-orange-200">
+                    <h4 className="font-semibold text-lg text-orange-800 mb-2">Gejala yang Terdeteksi:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {predictionResult.active_symptoms.map((symptom, index) => (
+                        <span key={index} className="px-3 py-1 bg-orange-200 text-orange-800 rounded-full text-sm">
+                          {symptom}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning Section */}
+                <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                  <h4 className="font-semibold text-red-800 mb-2">⚠️ Catatan Penting:</h4>
+                  <p className="text-red-700">
+                    Hasil diagnosa ini memiliki tingkat akurasi {predictionResult.accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
+                    Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePrint}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF823C] text-white rounded-xl font-medium hover:bg-[#FF823C]/90"
+                  >
+                    <IconDownload className="w-5 h-5" />
+                    Cetak Hasil
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setShowResult(false);
+                      setCurrentStep("method");
+                      setDetectionMode(null);
+                      setSelectedImage(null);
+                      setAnswers({});
+                      setPredictionResult(null);
+                      setError(null);
+                      setCurrentQuestionIndex(0);
+                    }}
+                    className="flex-1 py-3 bg-neutral-100 text-neutral-700 rounded-xl font-medium hover:bg-neutral-200"
+                  >
+                    Mulai Ulang
+                  </motion.button>
                 </div>
               </div>
-              
-              {/* Recommendations Section */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-lg text-neutral-800">Rekomendasi Penanganan:</h4>
-                <div className="prose prose-neutral">
-                  {recommendations && (
-                    <div dangerouslySetInnerHTML={{ __html: recommendations }} />
-                  )}
-                </div>
-              </div>
-
-              {/* Warning Section */}
-              <div className="bg-red-50 p-6 rounded-xl border border-red-100">
-                <h4 className="font-semibold text-red-800 mb-2">Catatan Penting:</h4>
-                <p className="text-red-700">
-                  Hasil diagnosa ini memiliki tingkat akurasi {accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
-                  Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handlePrint}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF823C] text-white rounded-xl font-medium hover:bg-[#FF823C]/90"
-                >
-                  <IconDownload className="w-5 h-5" />
-                  Cetak Hasil
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setShowResult(false);
-                    setCurrentStep("method");
-                    setDetectionMode(null);
-                    setSelectedImage(null);
-                    setAnswers({});
-                    setDiagnosis("");
-                    setRecommendations("");
-                    setAccuracy("");
-                  }}
-                  className="flex-1 py-3 bg-neutral-100 text-neutral-700 rounded-xl font-medium hover:bg-neutral-200"
-                >
-                  Mulai Ulang
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderQuestionnaire = () => {
     const currentQuestion = questions[currentQuestionIndex];
@@ -577,6 +750,12 @@ export default function AIPage() {
                     ))}
                   </div>
                 </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
+                    {error}
+                  </div>
+                )}
 
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -613,9 +792,10 @@ export default function AIPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleQuestionnaireSubmit}
-                      className="px-6 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600"
+                      disabled={isAnalyzing}
+                      className="px-6 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Analisis Gejala
+                      {isAnalyzing ? "Menganalisis..." : "Analisis Gejala"}
                     </motion.button>
                   )}
                 </div>
@@ -664,6 +844,8 @@ export default function AIPage() {
                 setSelectedImage(null);
                 setAnswers({});
                 setShowResult(false);
+                setError(null);
+                setCurrentQuestionIndex(0);
               }
             }}
             className="mb-6 text-gray-600 hover:text-gray-800 flex items-center gap-2"

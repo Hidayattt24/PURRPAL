@@ -8,6 +8,8 @@ const modulesRoutes = require('./routes/modules');
 const veterinaryRoutes = require('./routes/veterinary');
 const userRoutes = require('./routes/user');
 const locationRoutes = require('./routes/location');
+const chatbotRoutes = require('./routes/chatbot');
+const aiRoutes = require('./routes/ai'); // Add AI routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -86,6 +88,14 @@ app.get('/docs', (req, res) => {
                 border-radius: 5px;
                 margin: 10px 0;
             }
+            .new-badge {
+                background: #28a745;
+                color: white;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 0.8em;
+                margin-left: 10px;
+            }
         </style>
     </head>
     <body>
@@ -145,28 +155,6 @@ app.get('/docs', (req, res) => {
 }</pre>
         </div>
 
-        <div class="endpoint">
-            <span class="method put">PUT</span>
-            <span class="path">/api/users/password</span>
-            <p>Change password (Protected)</p>
-            <pre>
-{
-    "currentPassword": "old_password",
-    "newPassword": "new_password"
-}</pre>
-        </div>
-
-        <div class="endpoint">
-            <span class="method put">PUT</span>
-            <span class="path">/api/users/email</span>
-            <p>Update email (Protected)</p>
-            <pre>
-{
-    "newEmail": "new@example.com",
-    "password": "current_password"
-}</pre>
-        </div>
-
         <h2>📝 Stories</h2>
         
         <div class="endpoint">
@@ -179,16 +167,6 @@ app.get('/docs', (req, res) => {
             <span class="method post">POST</span>
             <span class="path">/api/stories</span>
             <p>Create new story (Protected)</p>
-            <pre>
-{
-    "recipient": "Pet Name",
-    "content": "Story content",
-    "location": {
-        "name": "Location Name",
-        "address": "Full Address"
-    },
-    "activity_image_url": "image_url"
-}</pre>
         </div>
 
         <h2>📚 Education Modules</h2>
@@ -214,30 +192,94 @@ app.get('/docs', (req, res) => {
             <p>Optional query parameter: <code>?city=Jakarta</code></p>
         </div>
 
-        <h2>🤖 AI & Chatbot</h2>
+        <h2>🤖 Chatbot</h2>
         
         <div class="endpoint">
             <span class="method post">POST</span>
+            <span class="path">/api/chatbot/message</span>
+            <p>Send message to PurrPal AI (Protected)</p>
+            <pre>
+{
+    "message": "Kucing saya tidak mau makan, apa yang harus saya lakukan?"
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/chatbot/history</span>
+            <p>Get conversation history (Protected)</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method delete">DELETE</span>
+            <span class="path">/api/chatbot/history</span>
+            <p>Clear conversation history (Protected)</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/chatbot/health</span>
+            <p>Check chatbot health status</p>
+        </div>
+
+        <h2>🧠 AI Detection <span class="new-badge">NEW</span></h2>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <span class="path">/api/ai/predict-symptoms</span>
+            <span class="new-badge">NEW</span>
+            <p>Predict cat disease based on symptoms questionnaire (Protected)</p>
+            <pre>
+{
+    "cat_info": {
+        "name": "Fluffy",
+        "age": "2 tahun",
+        "gender": "female",
+        "weight": 4.5,
+        "body_temperature": 39.0,
+        "duration_days": 5,
+        "heart_rate": 130
+    },
+    "questionnaire": {
+        "cough": true,
+        "breathingDifficulty": false,
+        "fever": true,
+        "discomfort": true,
+        "appetiteLoss": true,
+        "weightLoss": false,
+        "vomiting": false,
+        "diarrhea": false
+    }
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/ai/health</span>
+            <span class="new-badge">NEW</span>
+            <p>Check AI services health status</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="path">/api/ai/info</span>
+            <span class="new-badge">NEW</span>
+            <p>Get information about available AI services</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method post">POST</span>
             <span class="path">/api/ai/detect-image</span>
-            <p>AI image detection (Protected)</p>
+            <p>AI image detection (Coming Soon)</p>
             <pre>
 {
     "image_url": "url_to_image"
 }</pre>
         </div>
 
-        <div class="endpoint">
-            <span class="method post">POST</span>
-            <span class="path">/api/chatbot/message</span>
-            <p>Send message to chatbot (Protected)</p>
-            <pre>
-{
-    "message": "Your question here"
-}</pre>
-        </div>
-
         <footer style="margin-top: 50px; text-align: center; color: #666;">
             <p>PurrPal API v1.0.0 | Made with ❤️ for cats</p>
+            <p><strong>New:</strong> AI-powered symptom prediction now available!</p>
         </footer>
     </body>
     </html>
@@ -257,7 +299,9 @@ app.get('/', (req, res) => {
       users: '/api/users',
       stories: '/api/stories',
       modules: '/api/modules',
-      veterinary: '/api/veterinary-services'
+      veterinary: '/api/veterinary-services',
+      chatbot: '/api/chatbot',
+      ai: '/api/ai' // Updated to use new AI routes
     }
   });
 });
@@ -269,25 +313,8 @@ app.use('/api/modules', modulesRoutes);
 app.use('/api/veterinary-services', veterinaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
-
-// AI & Chatbot placeholder endpoints
-app.post('/api/ai/detect-image', (req, res) => {
-  res.json({ 
-    status: 'todo',
-    message: 'AI image detection endpoint - to be implemented',
-    diagnosis: 'Kucing Anda terlihat sehat',
-    recommendations: 'Lanjutkan perawatan rutin',
-    accuracy: '85'
-  });
-});
-
-app.post('/api/chatbot/message', (req, res) => {
-  res.json({
-    status: 'todo',
-    message: 'Chatbot endpoint - to be implemented',
-    response: 'Maaf, fitur chatbot masih dalam pengembangan.'
-  });
-});
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/ai', aiRoutes); // Add AI routes
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -297,4 +324,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API Documentation available at http://localhost:${PORT}/docs`);
 });
