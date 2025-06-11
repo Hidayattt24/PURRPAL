@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { IconChevronLeft, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -62,7 +63,10 @@ export default function ChangePasswordPage() {
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        throw new Error("New passwords do not match");
+        toast.error("Passwords don't match", {
+          description: "Please make sure your new passwords match"
+        });
+        return;
       }
 
       if (formData.newPassword === formData.currentPassword) {
@@ -105,7 +109,10 @@ export default function ChangePasswordPage() {
         throw new Error(data.error || 'Failed to change password');
       }
 
-      setSuccess(true);
+      toast.success('Password changed successfully!', {
+        description: 'Your password has been updated securely.'
+      });
+
       setFormData({
         currentPassword: "",
         newPassword: "",
@@ -118,7 +125,9 @@ export default function ChangePasswordPage() {
       }, 2000);
     } catch (error) {
       console.error('Error changing password:', error);
-      setError(error instanceof Error ? error.message : 'Failed to change password');
+      toast.error('Failed to change password', {
+        description: error instanceof Error ? error.message : 'Please check your current password and try again'
+      });
     } finally {
       setIsLoading(false);
     }

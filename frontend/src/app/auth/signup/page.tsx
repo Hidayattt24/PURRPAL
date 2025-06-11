@@ -3,38 +3,58 @@
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
     const router = useRouter();
-    const [error, setError] = useState("");
+    const [error, setError] = useState<string>("");
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const handleSignUp = async (data: { email: string; password: string; username?: string }) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
+            setIsLoading(true);
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${apiUrl}/auth/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data)
             });
-
-            const result = await response.json();
-
+            
             if (!response.ok) {
-                throw new Error(result.error || 'Sign up failed');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to sign up');
             }
-
-            // Store token and user data
+            
+            const result = await response.json();
+            
+            // Save token
             localStorage.setItem('token', result.token);
+            
+            // Save user data
             localStorage.setItem('user', JSON.stringify(result.user));
+            
+            toast.success('Account created successfully!', {
+                description: 'Welcome to PurrPal!'
+            });
 
-            // Redirect to main page
-            router.push("/main/home");
-        } catch (error) {
-            console.error("Sign up failed:", error);
-            setError(error instanceof Error ? error.message : 'Sign up failed');
+            // Redirect to home
+            router.push('/main/home');
+        } catch (err) {
+            console.error('Signup error:', err);
+            setError(err instanceof Error ? err.message : 'Failed to sign up. Please try again.');
+            toast.error('Registration failed', {
+                description: err instanceof Error ? err.message : 'Please try again later'
+            });
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    return <AuthForm mode="signup" onSubmit={handleSignUp} error={error} />;
+    return (
+        <div className="min-h-screen">
+            <AuthForm mode="signup" onSubmit={handleSignUp} error={error} isLoading={isLoading} />
+        </div>
+    );
 }
