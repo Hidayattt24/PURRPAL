@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 
 // ML Service Configuration
 const ML_TABULAR_SERVICE_URL = process.env.ML_TABULAR_SERVICE_URL || 'http://localhost:8001';
+const ML_VISION_SERVICE_URL = process.env.ML_VISION_SERVICE_URL || 'http://localhost:8002';
 
 /**
  * @route   POST /api/ai/predict-symptoms
@@ -150,22 +151,71 @@ router.get('/health', async (req, res) => {
 
 /**
  * @route   POST /api/ai/detect-image
- * @desc    AI image detection (placeholder for future computer vision service)
+ * @desc    AI image detection using computer vision service
  * @access  Protected
  */
 router.post('/detect-image', auth, async (req, res) => {
-  // This is the existing placeholder endpoint
-  // Will be updated when computer vision service is ready
-  res.json({ 
-    success: true,
-    status: 'placeholder',
-    message: 'Computer vision service - coming soon',
-    data: {
-      diagnosis: 'Kucing Anda terlihat sehat (placeholder)',
-      recommendations: 'Lanjutkan perawatan rutin (placeholder)',
-      accuracy: '85'
+  try {
+    const { image_url, cat_info } = req.body;
+
+    if (!image_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'No image data provided'
+      });
     }
-  });
+
+    // Call vision service
+    console.log('Making prediction request to Vision service...');
+    const mlResponse = await fetch(`${ML_VISION_SERVICE_URL}/predict`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: image_url,
+        cat_info
+      })
+    });
+
+    if (!mlResponse.ok) {
+      const errorText = await mlResponse.text();
+      console.error('Vision service error:', errorText);
+      throw new Error(`Vision service responded with status ${mlResponse.status}: ${errorText}`);
+    }
+
+    const prediction = await mlResponse.json();
+
+    if (!prediction.success) {
+      throw new Error(prediction.error || 'Vision service prediction failed');
+    }
+
+    console.log('Vision prediction received:', {
+      disease: prediction.data.predicted_disease,
+      confidence: prediction.data.confidence
+    });
+
+    // Return the prediction data directly
+    res.json(prediction);
+
+  } catch (error) {
+    console.error('Error in detect-image:', error);
+
+    // Check if it's a network error (Vision service not available)
+    if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+      return res.status(503).json({
+        success: false,
+        error: 'Vision service is currently unavailable. Please try again later.',
+        details: 'The computer vision service is not responding. This might be a temporary issue.'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process image detection request',
+      details: error.message
+    });
+  }
 });
 
 /**
