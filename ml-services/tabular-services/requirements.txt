@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 pydantic
-scikit-learn
+scikit-learn==1.5.2
 pandas
 numpy
 joblib
