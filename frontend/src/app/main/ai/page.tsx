@@ -884,11 +884,10 @@ export default function AIPage() {
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-2">Gambar yang Dianalisis</p>
                 <div className="relative w-full aspect-square rounded-lg overflow-hidden">
-                  <Image
+                  <img
                     src={selectedImage}
                     alt="Analyzed cat"
-                    fill
-                    className="object-cover"
+                    className="object-cover w-full h-full"
                   />
                 </div>
               </div>

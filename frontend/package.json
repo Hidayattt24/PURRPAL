@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "setup-env": "node scripts/setup-env.js",
+    "dev": "npm run setup-env && next dev",
+    "build": "npm run setup-env && next build",
     "start": "next start",
     "lint": "next lint"
   },

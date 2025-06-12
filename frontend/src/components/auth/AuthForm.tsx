@@ -203,9 +203,8 @@ export function AuthForm({ mode, onSubmit, error, isLoading = false }: AuthFormP
                             alt={mode === "login" ? "Login illustration" : "Sign up illustration"}
                             width={500}
                             height={500}
-                            style={{ objectFit: 'contain' }}
                             priority
-                            className="max-w-full"
+                            className="max-w-full object-contain"
                         />
                     </div>
                 </div>
