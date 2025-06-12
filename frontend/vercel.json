@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://purrpal-backend-817826973206.asia-southeast2.run.app/api",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://dalbccgmacradpgwvmxm.supabase.co",
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDA72Ut_hqVgFT7N8Vso6239u5xauVuIHg"
+  }
+} 
