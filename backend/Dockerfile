@@ -1,42 +1,47 @@
-# Stage 1: Git operations
-FROM alpine/git:latest as git-stage
-
-WORKDIR /repo
-
-# Copy git configuration
-COPY .git .git
-COPY .gitmodules .gitmodules
-
-# Clone submodules
-RUN git submodule update --init --recursive --depth 1
-
-# Stage 2: Application build
-FROM node:18-alpine as app-stage
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies first (for better caching)
+# Install git and other necessary tools
+RUN apk add --no-cache git openssh-client
+
+# Copy package files first for better caching
 COPY package*.json ./
+
+# Install dependencies
 RUN npm ci --only=production
 
-# Copy application source
+# Copy application source (this includes .gitmodules)
 COPY . .
 
-# Copy submodules from git stage
-COPY --from=git-stage /repo/chatbot ./chatbot
+# Configure git for submodule operations
+RUN git config --global user.email "build@purrpal.com" && \
+    git config --global user.name "PurrPal Build"
 
-# Verify files
-RUN echo "📁 Verifying chatbot files:" && \
-    ls -la chatbot/ && \
-    if [ -f chatbot/src/chatbot.js ]; then \
-        echo "✅ Chatbot source verified"; \
+# Initialize and update submodules
+# The --recursive flag handles nested submodules
+# The --depth 1 flag makes it faster by doing shallow clone
+RUN if [ -f .gitmodules ]; then \
+        echo "📦 Initializing git submodules..." && \
+        git submodule update --init --recursive --depth 1 && \
+        echo "✅ Submodules initialized successfully" && \
+        ls -la chatbot/ && \
+        echo "📁 Chatbot contents:" && \
+        find chatbot/ -type f -name "*.js" | head -10; \
     else \
-        echo "❌ Chatbot source missing"; \
-        exit 1; \
+        echo "⚠️ No .gitmodules file found"; \
     fi
 
-# Expose port
+# Verify chatbot files exist
+RUN if [ -f chatbot/src/chatbot.js ]; then \
+        echo "✅ Chatbot source found"; \
+    else \
+        echo "❌ Chatbot source not found, listing chatbot directory:" && \
+        ls -la chatbot/ || echo "Chatbot directory does not exist"; \
+    fi
+
+# Expose port for Cloud Run
 EXPOSE 8080
 
-# Start application
+# Start the application
 CMD ["npm", "start"]
