@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "setup-env": "node scripts/setup-env.js",
-    "dev": "npm run setup-env && next dev",
-    "build": "NODE_OPTIONS='--max_old_space_size=4096' npm run setup-env && next build --no-lint",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
