@@ -1,13 +1,15 @@
 "use client";
 
 import { AuthForm } from "@/components/auth/AuthForm";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { config, debugConfig, testApiConnectivity, apiClient, waitForRuntimeEnv } from "@/lib/config";
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isEnvReady, setIsEnvReady] = useState<boolean>(false);
@@ -127,11 +129,14 @@ export default function LoginPage() {
                 throw new Error('Invalid server response: missing user data');
             }
             
-            // Save authentication data
+            // Save token in both localStorage and cookie
             localStorage.setItem('token', result.token);
+            Cookies.set('token', result.token, { expires: 7 }); // Cookie expires in 7 days
+            
+            // Save user data
             localStorage.setItem('user', JSON.stringify(result.user));
             
-            console.log('💾 Authentication data saved to localStorage');
+            console.log('💾 Authentication data saved to localStorage and cookies');
             
             // Show success message
             toast.success('Welcome back!', {
@@ -141,9 +146,10 @@ export default function LoginPage() {
             // Small delay to ensure localStorage is written
             await new Promise(resolve => setTimeout(resolve, 100));
             
-            // Navigate to dashboard
-            console.log('🏠 Redirecting to dashboard...');
-            router.push('/main/home');
+            // Redirect to returnUrl if exists, otherwise to home
+            const returnUrl = searchParams.get('returnUrl');
+            console.log('🏠 Redirecting to:', returnUrl || '/main/home');
+            router.push(returnUrl || '/main/home');
             
         } catch (err) {
             console.error('❌ LOGIN ERROR:', err);

@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as Dialog from '@radix-ui/react-dialog';
+import Cookies from 'js-cookie';
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
@@ -61,6 +62,7 @@ export default function SettingsPage() {
     setOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
+    Cookies.remove('token');
     router.push('/');
   };
 

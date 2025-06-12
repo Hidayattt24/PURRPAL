@@ -82,7 +82,6 @@ export default function ModulDetailPage() {
   const [module, setModule] = useState<ModuleContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -96,10 +95,6 @@ export default function ModulDetailPage() {
         
         const data = await response.json();
         setModule(data);
-        // Initially expand the first section
-        if (data.sections && data.sections.length > 0) {
-          setExpandedSections(new Set([data.sections[0].id]));
-        }
       } catch (err) {
         console.error('Error fetching module:', err);
         setError('Failed to load module content. Please try again later.');
@@ -112,18 +107,6 @@ export default function ModulDetailPage() {
       fetchModule();
     }
   }, [params.id]);
-
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
-      } else {
-        newSet.add(sectionId);
-      }
-      return newSet;
-    });
-  };
 
   if (isLoading) {
     return (
@@ -240,11 +223,8 @@ export default function ModulDetailPage() {
               transition={{ delay: idx * 0.15 }}
               className="bg-white/70 backdrop-blur-sm rounded-3xl border border-white/50 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500"
             >
-              <button
-                onClick={() => toggleSection(section.id)}
-                className="w-full text-left group"
-              >
-                <div className="p-8 flex items-start gap-6 cursor-pointer hover:bg-white/80 transition-all duration-300">
+              <div className="p-8 flex flex-col gap-6">
+                <div className="flex items-start gap-6">
                   <motion.div 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -253,59 +233,37 @@ export default function ModulDetailPage() {
                     {getEmoji(section.icon)}
                   </motion.div>
                   <div className="flex-grow">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-2xl md:text-3xl font-bold text-slate-800 group-hover:text-slate-900 transition-colors">
-                        {section.title}
-                      </h2>
-                      <motion.div
-                        animate={{ rotate: expandedSections.has(section.id) ? 180 : 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <IconChevronDown className="w-7 h-7 text-slate-400 group-hover:text-slate-600 transition-colors" />
-                      </motion.div>
-                    </div>
-                    <p className="text-slate-600 mt-3 text-lg leading-relaxed line-clamp-2">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 transition-colors">
+                      {section.title}
+                    </h2>
+                    <p className="text-slate-600 mt-3 text-lg leading-relaxed">
                       {section.description}
                     </p>
                   </div>
                 </div>
-              </button>
 
-              {/* Expanded Content */}
-              {expandedSections.has(section.id) && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                  className="border-t border-slate-200/50 bg-gradient-to-r from-white/40 to-slate-50/40 backdrop-blur-sm"
-                >
-                  <div className="p-8 pt-6">
-                    <p className="text-slate-700 mb-8 text-lg leading-relaxed">
-                      {section.description}
-                    </p>
-                    {section.highlights && section.highlights.length > 0 && (
-                      <div className="space-y-4">
-                        <h3 className="text-xl font-semibold text-slate-800 mb-6">Key Points:</h3>
-                        {section.highlights.map((highlight, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, x: -30 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/30 hover:bg-white/80 transition-all duration-300 group"
-                          >
-                            <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                              <span className="text-white text-sm font-bold">{index + 1}</span>
-                            </div>
-                            <p className="text-slate-700 flex-grow text-lg leading-relaxed">{highlight}</p>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                <div className="border-t border-slate-200/50 pt-6">
+                  {section.highlights && section.highlights.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-semibold text-slate-800 mb-6">Key Points:</h3>
+                      {section.highlights.map((highlight, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -30 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/30 hover:bg-white/80 transition-all duration-300 group"
+                        >
+                          <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                            <span className="text-white text-sm font-bold">{index + 1}</span>
+                          </div>
+                          <p className="text-slate-700 flex-grow text-lg leading-relaxed">{highlight}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

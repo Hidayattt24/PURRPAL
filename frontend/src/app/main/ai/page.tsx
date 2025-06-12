@@ -1,14 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconUpload, IconX, IconCat, IconPaw, IconArrowRight, IconDownload, IconMars, IconVenus } from "@tabler/icons-react";
+import { 
+  IconUpload, 
+  IconX, 
+  IconCat, 
+  IconPaw, 
+  IconArrowRight, 
+  IconDownload, 
+  IconMars, 
+  IconVenus,
+  IconStethoscope,
+  IconClock,
+  IconStar,
+  IconMap2,
+  IconMapPin
+} from "@tabler/icons-react";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import { QuestionWrapper } from "@/components/ui/question-wrapper";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Expandable, ExpandableTrigger, ExpandableCard, ExpandableCardHeader, ExpandableCardContent, ExpandableContent } from "@/components/ui/expandable";
+import { Badge } from "@/components/ui/badge";
 
 type DetectionMode = "image" | "questionnaire" | null;
 type Step = "info" | "method" | "detection";
@@ -129,6 +145,25 @@ export default function AIPage() {
   const [predictionResult, setPredictionResult] = useState<PredictionResponse["data"] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset states when changing detection mode
+  useEffect(() => {
+    if (detectionMode === null) {
+      setSelectedImage(null);
+      setShowResult(false);
+      setPredictionResult(null);
+      setError(null);
+      setAnswers({});
+      setCurrentQuestionIndex(0);
+    }
+  }, [detectionMode]);
+
+  // Reset error when selecting new image
+  useEffect(() => {
+    if (selectedImage) {
+      setError(null);
+    }
+  }, [selectedImage]);
+
   const handleAnswer = (questionId: string, answer: boolean) => {
     setAnswers(prev => ({ ...prev, [questionId]: answer }));
     if (currentQuestionIndex < questions.length - 1) {
@@ -166,9 +201,40 @@ export default function AIPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Ukuran file terlalu besar. Maksimum 5MB.');
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('File harus berupa gambar (JPG, PNG).');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
+        // Validate image dimensions
+        const img = document.createElement('img') as HTMLImageElement;
+        img.onload = () => {
+          // Minimum dimensions 64x64
+          if (img.width < 64 || img.height < 64) {
+            setError('Resolusi gambar terlalu kecil. Minimum 64x64 piksel.');
+            return;
+          }
+          setSelectedImage(reader.result as string);
+          setError(null);
+        };
+        img.onerror = () => {
+          setError('Format gambar tidak valid.');
+        };
+        if (typeof reader.result === 'string') {
+          img.src = reader.result;
+        }
+      };
+      reader.onerror = () => {
+        setError('Gagal membaca file.');
       };
       reader.readAsDataURL(file);
     }
@@ -181,8 +247,18 @@ export default function AIPage() {
       setIsAnalyzing(true);
       setError(null);
       
-      // For now, call the placeholder image detection endpoint
+      // Get auth token
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to use AI features');
+      }
+
+      console.log('Sending request to AI service...', {
+        image_size: selectedImage.length,
+        cat_info: catInfo
+      });
+
+      // Call the backend API
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/ai/detect-image`, {
         method: 'POST',
@@ -192,36 +268,67 @@ export default function AIPage() {
         },
         body: JSON.stringify({
           image_url: selectedImage,
-          cat_info: catInfo
+          cat_info: {
+            name: catInfo.name,
+            age: catInfo.age,
+            gender: catInfo.gender,
+            weight: catInfo.weight || 4.0,
+            body_temperature: catInfo.body_temperature || 38.5,
+            duration_days: catInfo.duration_days || 3,
+            heart_rate: catInfo.heart_rate || 120
+          }
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to analyze image');
+      // Check if response is ok and is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error('Server returned non-JSON response');
       }
 
       const result = await response.json();
+      console.log('API Response:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
       
-      // Set placeholder result until computer vision is implemented
-      setPredictionResult({
-        predicted_disease: "Pemeriksaan Visual",
-        confidence: 85,
-        diagnosis: result.data.diagnosis,
-        recommendations: result.data.recommendations,
-        accuracy: result.data.accuracy,
-        cat_info: catInfo,
-        active_symptoms: ["Pemeriksaan visual"],
-        all_probabilities: { "Sehat": 85, "Perlu Perhatian": 15 }
-      });
-      
+      if (!result.success) {
+        throw new Error(result.error || 'Vision service prediction failed');
+      }
+
+      console.log('Setting prediction result:', result.data);
+      setPredictionResult(result.data);
       setShowResult(true);
+      
     } catch (error) {
       console.error('Error analyzing image:', error);
-      setError('Terjadi kesalahan saat menganalisis gambar. Silakan coba lagi.');
+      
+      if (error instanceof Error) {
+        if (error.message.includes('login')) {
+          setError('Silakan login terlebih dahulu untuk menggunakan fitur AI.');
+        } else if (error.message.includes('unavailable')) {
+          setError('Layanan AI sedang tidak tersedia. Silakan coba lagi nanti.');
+        } else if (error.message.includes('Invalid image')) {
+          setError('Format gambar tidak valid. Gunakan format JPG atau PNG.');
+        } else if (error.message.includes('non-JSON')) {
+          setError('Terjadi kesalahan pada server. Silakan coba lagi nanti.');
+        } else {
+          setError(`Terjadi kesalahan: ${error.message}`);
+        }
+      } else {
+        setError('Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.');
+      }
     } finally {
       setIsAnalyzing(false);
     }
   };
+
+  // Add debug log for showResult and predictionResult changes
+  useEffect(() => {
+    console.log('Show Result:', showResult);
+    console.log('Prediction Result:', predictionResult);
+  }, [showResult, predictionResult]);
 
   const handleQuestionnaireSubmit = async () => {
     const allAnswered = Object.values(answers).every(answer => answer !== null);
@@ -267,12 +374,17 @@ export default function AIPage() {
         body: JSON.stringify(requestData)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      // Check if response is ok and is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error('Server returned non-JSON response');
       }
 
-      const result: PredictionResponse = await response.json();
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
       
       if (!result.success) {
         throw new Error(result.data?.toString() || 'Prediction failed');
@@ -291,6 +403,8 @@ export default function AIPage() {
           setError('Silakan login terlebih dahulu untuk menggunakan fitur AI.');
         } else if (error.message.includes('unavailable')) {
           setError('Layanan AI sedang tidak tersedia. Silakan coba lagi nanti.');
+        } else if (error.message.includes('non-JSON')) {
+          setError('Terjadi kesalahan pada server. Silakan coba lagi nanti.');
         } else {
           setError(`Terjadi kesalahan: ${error.message}`);
         }
@@ -316,17 +430,17 @@ export default function AIPage() {
       Tingkat Keyakinan: ${predictionResult.confidence}%
       
       Detail Diagnosis:
-      ${predictionResult.diagnosis.replace(/<[^>]*>/g, '')}
+      ${predictionResult.diagnosis.replace(/<[^>]*>/g, '').trim()}
 
       Rekomendasi Penanganan:
-      ${predictionResult.recommendations.replace(/<[^>]*>/g, '')}
+      ${predictionResult.recommendations.replace(/<[^>]*>/g, '').trim()}
 
       Gejala yang Terdeteksi:
       ${predictionResult.active_symptoms.join(', ')}
 
       Catatan Penting:
-      Hasil diagnosa ini memiliki tingkat akurasi ${predictionResult.accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
-      Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
+      Hasil diagnosa ini memiliki tingkat akurasi ${predictionResult.accuracy}% berdasarkan penelitian, 
+      yang berarti tidak 100% akurat. Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
     `;
 
     const printWindow = window.open('', '', 'height=600,width=800');
@@ -483,59 +597,146 @@ export default function AIPage() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl mx-auto"
+      className="max-w-4xl mx-auto space-y-12"
     >
-      <div className="text-center mb-8">
-        <AnimatedGradientText className="text-2xl font-semibold mb-2">
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        <AnimatedGradientText className="text-3xl font-semibold mb-2">
           Hai {catInfo.name}! 👋
         </AnimatedGradientText>
-        <p className="text-gray-600">
-          Pilih metode deteksi yang ingin kamu gunakan
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          PurrPal AI menyediakan dua metode deteksi penyakit yang akurat. Pilih metode yang sesuai dengan kebutuhan Anda.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Method Cards */}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Image Detection Card */}
         <motion.button
           whileHover={{ scale: 1.02, rotate: -1 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => handleMethodSelect("image")}
-          className="relative group bg-white p-6 rounded-2xl shadow-lg text-center hover:shadow-xl transition-all overflow-hidden"
+          className="relative group bg-white p-8 rounded-2xl shadow-lg text-left hover:shadow-xl transition-all overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <IconCat className="w-8 h-8 text-[#FF823C]" />
+          <div className="relative z-10 space-y-6">
+            <div className="flex items-start justify-between">
+              <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center">
+                <IconCat className="w-8 h-8 text-[#FF823C]" />
+              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 px-3 py-1">
+                Available Now
+              </Badge>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Deteksi via Gambar</h3>
-            <p className="text-gray-600 text-sm">
-              Upload foto kucing Anda untuk mendeteksi ras dan potensi penyakit
-            </p>
-            <div className="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-              Coming Soon
+            
+            <div>
+              <h3 className="text-2xl font-semibold mb-2">Deteksi via Gambar</h3>
+              <p className="text-gray-600">
+                Upload foto kucing Anda untuk mendeteksi penyakit kulit dengan teknologi AI canggih
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconStethoscope className="w-4 h-4 text-[#FF823C]" />
+                <span>Deteksi visual penyakit kulit</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconClock className="w-4 h-4 text-[#FF823C]" />
+                <span>Hasil analisis dalam hitungan detik</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconStar className="w-4 h-4 text-[#FF823C]" />
+                <span>Akurasi tinggi berdasarkan dataset veteriner</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-[#FF823C] font-medium">
+              Mulai Deteksi
+              <IconArrowRight className="w-4 h-4" />
             </div>
           </div>
         </motion.button>
 
+        {/* Questionnaire Card */}
         <motion.button
           whileHover={{ scale: 1.02, rotate: 1 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => handleMethodSelect("questionnaire")}
-          className="relative group bg-white p-6 rounded-2xl shadow-lg text-center hover:shadow-xl transition-all overflow-hidden"
+          className="relative group bg-white p-8 rounded-2xl shadow-lg text-left hover:shadow-xl transition-all overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <IconPaw className="w-8 h-8 text-[#FF823C]" />
+          <div className="relative z-10 space-y-6">
+            <div className="flex items-start justify-between">
+              <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center">
+                <IconPaw className="w-8 h-8 text-[#FF823C]" />
+              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 px-3 py-1">
+                Available Now
+              </Badge>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Deteksi via Kuisioner</h3>
-            <p className="text-gray-600 text-sm">
-              Jawab beberapa pertanyaan untuk analisis kesehatan kucing
-            </p>
-            <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-              Available Now
+            
+            <div>
+              <h3 className="text-2xl font-semibold mb-2">Deteksi via Kuisioner</h3>
+              <p className="text-gray-600">
+                Jawab serangkaian pertanyaan untuk analisis menyeluruh kesehatan kucing Anda
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconStethoscope className="w-4 h-4 text-[#FF823C]" />
+                <span>Analisis komprehensif berbagai gejala</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconClock className="w-4 h-4 text-[#FF823C]" />
+                <span>Kuisioner singkat dan mudah</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <IconStar className="w-4 h-4 text-[#FF823C]" />
+                <span>Rekomendasi penanganan detail</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-[#FF823C] font-medium">
+              Mulai Kuisioner
+              <IconArrowRight className="w-4 h-4" />
             </div>
           </div>
         </motion.button>
+      </div>
+
+      {/* Additional Information Section */}
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+            <IconStethoscope className="w-6 h-6 text-blue-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Diagnosis Akurat</h3>
+          <p className="text-gray-600 text-sm">
+            Model AI kami dilatih dengan dataset veteriner yang luas dan terus diperbarui untuk memberikan diagnosis yang akurat dan terpercaya.
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+            <IconClock className="w-6 h-6 text-green-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Deteksi Cepat</h3>
+          <p className="text-gray-600 text-sm">
+            Dapatkan hasil analisis kesehatan kucing Anda dalam hitungan detik dengan teknologi AI canggih dan pemrosesan real-time.
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+            <IconStar className="w-6 h-6 text-purple-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Rekomendasi Tepat</h3>
+          <p className="text-gray-600 text-sm">
+            Terima saran penanganan yang disesuaikan dengan kondisi kucing Anda dari database veteriner kami yang komprehensif.
+          </p>
+        </div>
       </div>
     </motion.div>
   );
@@ -544,61 +745,81 @@ export default function AIPage() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg">
         <div className="space-y-4">
-          {selectedImage ? (
-            <div className="relative">
-              <div className="aspect-video rounded-xl overflow-hidden bg-gray-100">
-                <Image
-                  src={selectedImage}
-                  alt="Selected"
-                  width={800}
-                  height={600}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-lg"
-              >
-                <IconX className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-          ) : (
-            <label className="relative block w-full border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#FF823C] transition-all group">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="relative z-10"
-              >
-                <IconUpload className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[#FF823C] transition-colors" />
-                <p className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
-                  Upload foto kucing Anda di sini
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Format yang didukung: JPG, PNG (Max. 5MB)
-                </p>
-              </motion.div>
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-            </label>
-          )}
+          {!showResult ? (
+            <>
+              {selectedImage ? (
+                <div className="relative">
+                  <div className="aspect-video rounded-xl overflow-hidden bg-gray-100">
+                    <Image
+                      src={selectedImage}
+                      alt="Selected"
+                      width={800}
+                      height={600}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-lg"
+                  >
+                    <IconX className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              ) : (
+                <label className="relative block w-full border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#FF823C] transition-all group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="relative z-10"
+                  >
+                    <IconUpload className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[#FF823C] transition-colors" />
+                    <p className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+                      Upload foto kucing Anda di sini
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Format yang didukung: JPG, PNG (Max. 5MB)
+                    </p>
+                  </motion.div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                </label>
+              )}
 
-          {selectedImage && (
-            <motion.button
-              onClick={handleImageAnalysis}
-              disabled={isAnalyzing}
-              className="w-full py-3 bg-[#FF823C] text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isAnalyzing ? "Menganalisis..." : "Analisis Gambar (Demo)"}
-            </motion.button>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                  {error}
+                </div>
+              )}
+
+              {selectedImage && (
+                <motion.button
+                  onClick={handleImageAnalysis}
+                  disabled={isAnalyzing}
+                  className="w-full py-3 bg-[#FF823C] text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isAnalyzing ? "Menganalisis..." : "Analisis Gambar"}
+                </motion.button>
+              )}
+            </>
+          ) : (
+            renderResults()
           )}
         </div>
       </div>
+
+      {/* Loading States */}
+      <MultiStepLoader
+        loadingStates={loadingStates}
+        loading={isAnalyzing}
+        duration={2000}
+        loop={false}
+      />
     </div>
   );
 
@@ -606,114 +827,170 @@ export default function AIPage() {
     if (!predictionResult) return null;
 
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <div className="text-center py-8">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="space-y-6"
-            >
-              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
-                <IconPaw className="w-8 h-8 text-green-500" />
-              </div>
-              <h3 className="text-2xl font-semibold text-neutral-800">Hasil Analisis</h3>
-
-              {/* Data Section */}
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-neutral-50 p-4 rounded-xl">
-                    <p className="text-sm text-neutral-600">Nama</p>
-                    <p className="font-medium text-neutral-800">{catInfo.name}</p>
-                  </div>
-                  <div className="bg-neutral-50 p-4 rounded-xl">
-                    <p className="text-sm text-neutral-600">Usia</p>
-                    <p className="font-medium text-neutral-800">{catInfo.age}</p>
-                  </div>
-                  <div className="bg-neutral-50 p-4 rounded-xl">
-                    <p className="text-sm text-neutral-600">Jenis Kelamin</p>
-                    <p className="font-medium text-neutral-800">{catInfo.gender === 'male' ? 'Jantan' : 'Betina'}</p>
-                  </div>
-                </div>
-
-                {/* Disease & Confidence */}
-                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-                  <h4 className="font-semibold text-lg text-blue-800 mb-2">Prediksi Penyakit:</h4>
-                  <p className="text-xl font-bold text-blue-900">{predictionResult.predicted_disease}</p>
-                  <p className="text-blue-700 mt-2">Tingkat Keyakinan: {predictionResult.confidence}%</p>
-                </div>
-
-                {/* Diagnosis Section */}
-                <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200">
-                  <h4 className="font-semibold text-lg text-neutral-800 mb-4">Detail Diagnosis:</h4>
-                  <div className="prose prose-neutral text-neutral-700">
-                    <div dangerouslySetInnerHTML={{ __html: predictionResult.diagnosis }} />
-                  </div>
-                </div>
-                
-                {/* Recommendations Section */}
-                <div className="bg-green-50 p-6 rounded-xl border border-green-200">
-                  <h4 className="font-semibold text-lg text-green-800 mb-4">Rekomendasi Penanganan:</h4>
-                  <div className="prose prose-green text-green-700">
-                    <div dangerouslySetInnerHTML={{ __html: predictionResult.recommendations }} />
-                  </div>
-                </div>
-
-                {/* Active Symptoms */}
-                {predictionResult.active_symptoms.length > 0 && (
-                  <div className="bg-orange-50 p-6 rounded-xl border border-orange-200">
-                    <h4 className="font-semibold text-lg text-orange-800 mb-2">Gejala yang Terdeteksi:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {predictionResult.active_symptoms.map((symptom, index) => (
-                        <span key={index} className="px-3 py-1 bg-orange-200 text-orange-800 rounded-full text-sm">
-                          {symptom}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Warning Section */}
-                <div className="bg-red-50 p-6 rounded-xl border border-red-100">
-                  <h4 className="font-semibold text-red-800 mb-2">⚠️ Catatan Penting:</h4>
-                  <p className="text-red-700">
-                    Hasil diagnosa ini memiliki tingkat akurasi {predictionResult.accuracy}% berdasarkan penelitian, yang berarti tidak 100% akurat. 
-                    Layanan ini bersifat edukatif, bukan solutif, dan tidak menggantikan konsultasi medis profesional.
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handlePrint}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF823C] text-white rounded-xl font-medium hover:bg-[#FF823C]/90"
-                  >
-                    <IconDownload className="w-5 h-5" />
-                    Cetak Hasil
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setShowResult(false);
-                      setCurrentStep("method");
-                      setDetectionMode(null);
-                      setSelectedImage(null);
-                      setAnswers({});
-                      setPredictionResult(null);
-                      setError(null);
-                      setCurrentQuestionIndex(0);
-                    }}
-                    className="flex-1 py-3 bg-neutral-100 text-neutral-700 rounded-xl font-medium hover:bg-neutral-200"
-                  >
-                    Mulai Ulang
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
+      <div className="bg-white p-8 rounded-2xl shadow-lg max-w-3xl mx-auto">
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <div className="w-16 h-16 bg-[#FF823C] bg-opacity-10 rounded-2xl flex items-center justify-center">
+            <IconPaw className="w-8 h-8 text-[#FF823C]" />
           </div>
+          <h2 className="text-2xl font-semibold">Hasil Analisis</h2>
+          <p className="text-gray-600">
+            {detectionMode === 'image' 
+              ? `Berikut hasil analisis gambar untuk ${catInfo.name}`
+              : `Berikut hasil analisis gejala untuk ${catInfo.name}`
+            }
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          {/* Info Kucing */}
+          <div>
+            <h3 className="font-medium mb-4">Informasi Kucing</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">Nama</span>
+                <span className="font-medium">{catInfo.name}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">Usia</span>
+                <span className="font-medium">{catInfo.age}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">Jenis Kelamin</span>
+                <div className="flex items-center gap-2">
+                  {catInfo.gender === 'male' ? (
+                    <IconMars className="w-4 h-4 text-blue-500" />
+                  ) : (
+                    <IconVenus className="w-4 h-4 text-pink-500" />
+                  )}
+                  <span className="font-medium">
+                    {catInfo.gender === 'male' ? 'Jantan' : 'Betina'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hasil Deteksi */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium">Hasil Deteksi</h3>
+              <Badge variant="outline" className="bg-green-50">
+                AI Prediction
+              </Badge>
+            </div>
+
+            {/* Jika metode gambar, tampilkan gambar yang dianalisis */}
+            {detectionMode === 'image' && selectedImage && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Gambar yang Dianalisis</p>
+                <div className="relative w-full aspect-square rounded-lg overflow-hidden">
+                  <Image
+                    src={selectedImage}
+                    alt="Analyzed cat"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Hasil prediksi penyakit */}
+            <div className="bg-orange-50 p-4 rounded-xl">
+              <h4 className="font-medium text-lg mb-2">
+                {predictionResult.predicted_disease}
+              </h4>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div
+                  className="bg-[#FF823C] h-2 rounded-full"
+                  style={{
+                    width: `${predictionResult.confidence}%`,
+                  }}
+                />
+              </div>
+              <p className="text-sm text-gray-600">
+                Tingkat keyakinan: {predictionResult.confidence}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Diagnosis & Rekomendasi */}
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-blue-50 p-6 rounded-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <IconStethoscope className="w-5 h-5 text-blue-600" />
+              <h3 className="font-medium">Diagnosis</h3>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Berdasarkan {detectionMode === 'image' ? 'analisis gambar' : 'gejala yang diberikan'}, 
+                kucing Anda kemungkinan mengalami {predictionResult.predicted_disease}.
+              </p>
+              <p className="text-sm text-gray-600">
+                {predictionResult.diagnosis.replace(/<[^>]*>/g, '').trim()}
+              </p>
+              {predictionResult.active_symptoms && predictionResult.active_symptoms.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Gejala yang terdeteksi:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    {predictionResult.active_symptoms.map((symptom, idx) => (
+                      <li key={idx}>{symptom.replace(/<[^>]*>/g, '').trim()}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-green-50 p-6 rounded-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <IconStar className="w-5 h-5 text-green-600" />
+              <h3 className="font-medium">Rekomendasi</h3>
+            </div>
+            <div className="space-y-2">
+              {predictionResult.recommendations.split('\n').map((rec, idx) => (
+                <p key={idx} className="text-sm text-gray-600">
+                  {rec.replace(/<[^>]*>/g, '').trim()}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-4 justify-center mt-8">
+          <button
+            onClick={() => {
+              setCurrentStep("info");
+              setDetectionMode(null);
+              setSelectedImage(null);
+              setShowResult(false);
+              setPredictionResult(null);
+              setError(null);
+              setAnswers({});
+              setCurrentQuestionIndex(0);
+              setCatInfo({
+                name: "",
+                age: "",
+                gender: "",
+                weight: 4.0,
+                body_temperature: 38.5,
+                duration_days: 3,
+                heart_rate: 120
+              });
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
+          >
+            <IconX className="w-4 h-4" />
+            Kembali
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-6 py-3 bg-[#FF823C] hover:bg-[#ff7223] text-white rounded-xl transition-colors"
+          >
+            <IconDownload className="w-4 h-4" />
+            Unduh Hasil
+          </button>
         </div>
       </div>
     );
