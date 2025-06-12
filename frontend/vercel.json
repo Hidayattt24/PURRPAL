@@ -1,9 +1,14 @@
 {
   "version": 2,
-  "buildCommand": "next build",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://purrpal-backend-817826973206.asia-southeast2.run.app/api",
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDA72Ut_hqVgFT7N8Vso6239u5xauVuIHg",
     "NEXT_PUBLIC_SUPABASE_URL": "https://dalbccgmacradpgwvmxm.supabase.co",
-    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDA72Ut_hqVgFT7N8Vso6239u5xauVuIHg"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbGJjY2dtYWNyYWRwZ3d2bXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NzM0NzQsImV4cCI6MjA2NTE0OTQ3NH0.iw8w2vu9XYB92KsP4YcsssR6R7V3rYBJG9_VXCLCsLU"
   }
 }
