@@ -335,5 +335,12 @@ async def internal_error_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8001))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    import os
+    
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0", 
+        port=port,
+        log_level="info"
+    )
