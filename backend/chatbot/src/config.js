@@ -8,6 +8,7 @@ const ENV_SCHEMA = {
   GOOGLE_CLOUD_LOCATION: { required: false, type: 'string', default: 'us-central1' },
   VERTEX_AI_MODEL: { required: false, type: 'string', default: 'gemini-2.0-flash-001' },
   SERVICE_ACCOUNT_KEY_PATH: { required: false, type: 'string', default: './service-account-key.json' },
+  GOOGLE_APPLICATION_CREDENTIALS_JSON: { required: false, type: 'string' },
   CHATBOT_MAX_TOKENS: { required: false, type: 'number', default: 8192 },
   CHATBOT_TEMPERATURE: { required: false, type: 'number', default: 0.7 },
   CHATBOT_TOP_P: { required: false, type: 'number', default: 0.95 },
@@ -73,26 +74,81 @@ function validateAndParseEnv() {
 }
 
 /**
- * Validate service account key file
+ * Validate service account credentials (file or environment variable)
  */
-function validateServiceAccountKey(keyPath) {
+function validateServiceAccountCredentials() {
+  // Option 1: Environment variable (for production)
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    try {
+      console.log('🔑 Attempting to use service account from environment variable...');
+      
+      const credentialsJson = Buffer.from(
+        process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON, 
+        'base64'
+      ).toString();
+      
+      const keyData = JSON.parse(credentialsJson);
+      
+      // Validate required fields
+      const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
+      const missingFields = requiredFields.filter(field => !keyData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Invalid service account key from environment. Missing fields: ${missingFields.join(', ')}`);
+      }
+
+      console.log('✅ Using service account from environment variable');
+      console.log(`📧 Service account email: ${keyData.client_email}`);
+      console.log(`🆔 Project ID: ${keyData.project_id}`);
+      
+      return { 
+        source: 'environment', 
+        credentials: keyData,
+        projectId: keyData.project_id,
+        clientEmail: keyData.client_email
+      };
+      
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable');
+      }
+      console.error('❌ Failed to parse environment variable credentials:', error.message);
+      throw error;
+    }
+  }
+
+  // Option 2: File-based (for local development)
+  const keyPath = process.env.SERVICE_ACCOUNT_KEY_PATH || './service-account-key.json';
+  
+  console.log(`🔍 Looking for service account key file: ${keyPath}`);
+  
   if (!fs.existsSync(keyPath)) {
-    throw new Error(`Service account key file not found: ${keyPath}`);
+    throw new Error(`Service account key file not found: ${keyPath}. Please set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable or provide key file.`);
   }
 
   try {
     const keyContent = fs.readFileSync(keyPath, 'utf8');
     const keyData = JSON.parse(keyContent);
     
-    // Validate required fields in service account key
     const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
     const missingFields = requiredFields.filter(field => !keyData[field]);
     
     if (missingFields.length > 0) {
-      throw new Error(`Invalid service account key. Missing fields: ${missingFields.join(', ')}`);
+      throw new Error(`Invalid service account key file. Missing fields: ${missingFields.join(', ')}`);
     }
 
-    return keyData;
+    console.log('✅ Using service account from file:', keyPath);
+    console.log(`📧 Service account email: ${keyData.client_email}`);
+    console.log(`🆔 Project ID: ${keyData.project_id}`);
+    
+    return { 
+      source: 'file', 
+      keyPath: keyPath, 
+      credentials: keyData,
+      projectId: keyData.project_id,
+      clientEmail: keyData.client_email
+    };
+    
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error(`Invalid JSON in service account key file: ${keyPath}`);
@@ -147,14 +203,16 @@ function validateConfigValues(env) {
 
 // Validate and build configuration
 let envConfig;
+let serviceAccountInfo;
 try {
+  console.log('🔧 Validating environment configuration...');
   envConfig = validateAndParseEnv();
   validateConfigValues(envConfig);
   
-  // Validate service account key
-  const serviceAccountData = validateServiceAccountKey(envConfig.SERVICE_ACCOUNT_KEY_PATH);
+  console.log('🔑 Validating service account credentials...');
+  serviceAccountInfo = validateServiceAccountCredentials();
   
-  console.log('✓ Configuration validation successful');
+  console.log('✅ Configuration validation successful');
 } catch (error) {
   console.error('❌ Configuration error:', error.message);
   process.exit(1);
@@ -166,7 +224,7 @@ const config = {
     projectId: envConfig.GOOGLE_CLOUD_PROJECT,
     location: envConfig.GOOGLE_CLOUD_LOCATION,
     model: envConfig.VERTEX_AI_MODEL,
-    keyFilename: envConfig.SERVICE_ACCOUNT_KEY_PATH
+    auth: serviceAccountInfo
   },
   chatbot: {
     maxTokens: envConfig.CHATBOT_MAX_TOKENS,
@@ -213,7 +271,8 @@ console.log('🐱 PurrPal Configuration loaded:', {
   projectId: config.googleCloud.projectId,
   location: config.googleCloud.location,
   model: config.googleCloud.model,
-  keyFileExists: fs.existsSync(config.googleCloud.keyFilename),
+  authSource: config.googleCloud.auth.source,
+  serviceAccountEmail: config.googleCloud.auth.clientEmail,
   cacheEnabled: config.cache.enabled,
   rateLimitEnabled: config.rateLimit.requests > 0,
   environment: process.env.NODE_ENV || 'development'

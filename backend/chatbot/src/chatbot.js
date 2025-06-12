@@ -31,13 +31,34 @@ class PurrPalChatbot {
     try {
       logger.info('Initializing PurrPal Chatbot...');
       
-      // Initialize Vertex AI with comprehensive configuration
+      // Prepare authentication options based on config
+      const authOptions = {};
+      
+      if (config.googleCloud.auth.source === 'environment') {
+        // Use credentials from environment variable
+        authOptions.googleAuthOptions = {
+          credentials: config.googleCloud.auth.credentials
+        };
+        logger.info('Using service account from environment variable', {
+          clientEmail: config.googleCloud.auth.clientEmail,
+          projectId: config.googleCloud.auth.projectId
+        });
+      } else {
+        // Use file-based authentication
+        authOptions.googleAuthOptions = {
+          keyFilename: config.googleCloud.auth.keyPath
+        };
+        logger.info('Using service account from file', {
+          keyPath: config.googleCloud.auth.keyPath,
+          clientEmail: config.googleCloud.auth.clientEmail
+        });
+      }
+
+      // Initialize Vertex AI with dynamic authentication
       this.vertexAI = new VertexAI({
         project: config.googleCloud.projectId,
         location: config.googleCloud.location,
-        googleAuthOptions: {
-          keyFilename: config.googleCloud.keyFilename
-        }
+        ...authOptions
       });
 
       // Configure Gemini model with optimized settings for cat care
@@ -78,7 +99,9 @@ class PurrPalChatbot {
       logger.info('PurrPal Chatbot initialized successfully', {
         model: config.googleCloud.model,
         project: config.googleCloud.projectId,
-        location: config.googleCloud.location
+        location: config.googleCloud.location,
+        authSource: config.googleCloud.auth.source,
+        serviceAccount: config.googleCloud.auth.clientEmail
       });
 
       return true;
@@ -90,7 +113,8 @@ class PurrPalChatbot {
         error: error.message,
         stack: error.stack,
         project: config.googleCloud.projectId,
-        model: config.googleCloud.model
+        model: config.googleCloud.model,
+        authSource: config.googleCloud.auth?.source || 'unknown'
       });
 
       throw new Error(`Chatbot initialization failed: ${error.message}`);
@@ -433,6 +457,7 @@ class PurrPalChatbot {
           status: 'not_initialized',
           message: 'Chatbot not initialized',
           error: this.initializationError?.message,
+          authSource: config.googleCloud.auth?.source || 'unknown',
           metrics
         };
       }
@@ -448,6 +473,8 @@ class PurrPalChatbot {
         model: config.googleCloud.model,
         project: config.googleCloud.projectId,
         location: config.googleCloud.location,
+        authSource: config.googleCloud.auth.source,
+        serviceAccount: config.googleCloud.auth.clientEmail,
         testResponseTime: testTime,
         testSuccess: !!testResponse,
         cacheEnabled: config.cache.enabled,
@@ -464,6 +491,7 @@ class PurrPalChatbot {
         status: 'error',
         message: 'Health check failed',
         error: error.message,
+        authSource: config.googleCloud.auth?.source || 'unknown',
         metrics: MetricsCollector.getMetrics(),
         timestamp: new Date().toISOString()
       };
@@ -479,6 +507,7 @@ class PurrPalChatbot {
       activeConversations: this.conversationHistory.size,
       cacheSize: CacheManager.cache?.size || 0,
       initialized: this.initialized,
+      authSource: config.googleCloud.auth?.source || 'unknown',
       timestamp: new Date().toISOString()
     };
   }
