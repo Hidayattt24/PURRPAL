@@ -5,11 +5,10 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const storiesRoutes = require('./routes/stories');
 const modulesRoutes = require('./routes/modules');
-const veterinaryRoutes = require('./routes/veterinary');
 const userRoutes = require('./routes/user');
 const locationRoutes = require('./routes/location');
 const chatbotRoutes = require('./routes/chatbot');
-const aiRoutes = require('./routes/ai'); // Add AI routes
+const aiRoutes = require('./routes/ai'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -183,15 +182,6 @@ app.get('/docs', (req, res) => {
             <p>Get module details</p>
         </div>
 
-        <h2>🏥 Veterinary Services</h2>
-        
-        <div class="endpoint">
-            <span class="method get">GET</span>
-            <span class="path">/api/veterinary-services</span>
-            <p>Get all veterinary services</p>
-            <p>Optional query parameter: <code>?city=Jakarta</code></p>
-        </div>
-
         <h2>🤖 Chatbot</h2>
         
         <div class="endpoint">
@@ -299,9 +289,8 @@ app.get('/', (req, res) => {
       users: '/api/users',
       stories: '/api/stories',
       modules: '/api/modules',
-      veterinary: '/api/veterinary-services',
       chatbot: '/api/chatbot',
-      ai: '/api/ai' // Updated to use new AI routes
+      ai: '/api/ai'
     }
   });
 });
@@ -310,7 +299,6 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/stories', storiesRoutes);
 app.use('/api/modules', modulesRoutes);
-app.use('/api/veterinary-services', veterinaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/chatbot', chatbotRoutes);
