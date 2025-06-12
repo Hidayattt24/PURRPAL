@@ -1,12 +1,14 @@
 "use client";
 
 import { AuthForm } from "@/components/auth/AuthForm";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -29,8 +31,9 @@ export default function LoginPage() {
 
             const result = await response.json();
             
-            // Save token
+            // Save token in both localStorage and cookie
             localStorage.setItem('token', result.token);
+            Cookies.set('token', result.token, { expires: 7 }); // Cookie expires in 7 days
             
             // Save user data
             localStorage.setItem('user', JSON.stringify(result.user));
@@ -39,8 +42,9 @@ export default function LoginPage() {
                 description: 'Successfully logged in to your account.'
             });
 
-            // Redirect to home
-            router.push('/main/home');
+            // Redirect to returnUrl if exists, otherwise to home
+            const returnUrl = searchParams.get('returnUrl');
+            router.push(returnUrl || '/main/home');
         } catch (err) {
             console.error('Login error:', err);
             setError(err instanceof Error ? err.message : 'Failed to login. Please try again.');
