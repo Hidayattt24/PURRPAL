@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconUpload, IconX, IconCat, IconPaw, IconArrowRight, IconDownload, IconMars, IconVenus } from "@tabler/icons-react";
+import { IconUpload, IconX, IconCat, IconPaw, IconArrowRight, IconDownload, IconMars, IconVenus, IconStethoscope, IconClock, IconStar, IconMap2, IconMapPin } from "@tabler/icons-react";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import { QuestionWrapper } from "@/components/ui/question-wrapper";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Expandable, ExpandableTrigger, ExpandableCard, ExpandableCardHeader, ExpandableCardContent, ExpandableContent } from "@/components/ui/expandable";
+import { Badge } from "@/components/ui/badge";
 
 type DetectionMode = "image" | "questionnaire" | null;
 type Step = "info" | "method" | "detection";
@@ -483,59 +485,127 @@ export default function AIPage() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl mx-auto"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
     >
-      <div className="text-center mb-8">
-        <AnimatedGradientText className="text-2xl font-semibold mb-2">
-          Hai {catInfo.name}! 👋
+      <div className="text-center mb-12">
+        <AnimatedGradientText className="text-3xl font-semibold mb-4">
+          <span className="font-poppins">Hai {catInfo.name}! 👋</span>
         </AnimatedGradientText>
-        <p className="text-gray-600">
-          Pilih metode deteksi yang ingin kamu gunakan
+        <p className="text-gray-600 text-lg mb-8 font-poppins">
+          Pilih metode deteksi yang ingin kamu gunakan untuk memeriksa kesehatan kucing
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <motion.button
-          whileHover={{ scale: 1.02, rotate: -1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleMethodSelect("image")}
-          className="relative group bg-white p-6 rounded-2xl shadow-lg text-center hover:shadow-xl transition-all overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <IconCat className="w-8 h-8 text-[#FF823C]" />
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Image Detection Card */}
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Deteksi via Gambar</h3>
+                <Badge variant="secondary" className="mt-2">Coming Soon</Badge>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <IconMap2 className="w-6 h-6 text-blue-500" />
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Deteksi via Gambar</h3>
-            <p className="text-gray-600 text-sm">
-              Upload foto kucing Anda untuk mendeteksi ras dan potensi penyakit
+            <p className="text-gray-600 mb-4">
+              Unggah foto kucing Anda dan AI kami akan menganalisis kondisi kesehatannya secara visual.
             </p>
-            <div className="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-              Coming Soon
+            <ul className="space-y-3 text-gray-600">
+              <li className="flex items-center gap-2">
+                <IconStethoscope className="w-5 h-5 text-blue-500" />
+                <span>Identifikasi ras kucing</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <IconClock className="w-5 h-5 text-blue-500" />
+                <span>Deteksi tanda-tanda penyakit dari ciri fisik</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <IconStar className="w-5 h-5 text-blue-500" />
+                <span>Analisis kondisi bulu dan kulit</span>
+              </li>
+            </ul>
+            <div className="mt-4">
+              <p className="text-sm text-gray-500">
+                *Fitur ini akan segera hadir. Kami sedang menyempurnakan model AI untuk memberikan hasil yang lebih akurat.
+              </p>
             </div>
           </div>
-        </motion.button>
+        </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02, rotate: 1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleMethodSelect("questionnaire")}
-          className="relative group bg-white p-6 rounded-2xl shadow-lg text-center hover:shadow-xl transition-all overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FF823C]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="w-16 h-16 bg-[#FF823C]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <IconPaw className="w-8 h-8 text-[#FF823C]" />
+        {/* Questionnaire Card */}
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Deteksi via Kuisioner</h3>
+                <Badge variant="default" className="mt-2">Available Now</Badge>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <IconMapPin className="w-6 h-6 text-green-500" />
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Deteksi via Kuisioner</h3>
-            <p className="text-gray-600 text-sm">
-              Jawab beberapa pertanyaan untuk analisis kesehatan kucing
+            <p className="text-gray-600 mb-4">
+              Jawab beberapa pertanyaan tentang kondisi kucing Anda untuk mendapatkan analisis kesehatan yang komprehensif.
             </p>
-            <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-              Available Now
+            <ul className="space-y-3 text-gray-600">
+              <li className="flex items-center gap-2">
+                <IconStethoscope className="w-5 h-5 text-green-500" />
+                <span>14 pertanyaan diagnostik yang mudah dijawab</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <IconClock className="w-5 h-5 text-green-500" />
+                <span>Analisis gejala komprehensif dengan AI</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <IconStar className="w-5 h-5 text-green-500" />
+                <span>Rekomendasi penanganan yang tepat</span>
+              </li>
+            </ul>
+            <div className="mt-6">
+              <button
+                onClick={() => handleMethodSelect("questionnaire")}
+                className="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium"
+              >
+                Mulai Diagnosa
+              </button>
             </div>
           </div>
-        </motion.button>
+        </div>
+      </div>
+
+      {/* Additional Information Section */}
+      <div className="mt-16 grid md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+            <IconStethoscope className="w-6 h-6 text-blue-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Diagnosis Akurat</h3>
+          <p className="text-gray-600">
+            Model AI kami dilatih dengan dataset veteriner yang luas untuk memberikan diagnosis yang akurat dan terpercaya.
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+            <IconClock className="w-6 h-6 text-green-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Deteksi Cepat</h3>
+          <p className="text-gray-600">
+            Dapatkan hasil analisis kesehatan kucing Anda dalam hitungan detik dengan teknologi AI canggih.
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+            <IconStar className="w-6 h-6 text-purple-600" />
+          </div>
+          <h3 className="font-semibold text-lg mb-2">Rekomendasi Tepat</h3>
+          <p className="text-gray-600">
+            Terima saran penanganan yang disesuaikan dengan kondisi kucing Anda dari database veteriner kami.
+          </p>
+        </div>
       </div>
     </motion.div>
   );
