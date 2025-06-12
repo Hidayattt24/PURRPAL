@@ -29,6 +29,12 @@ interface ChatbotResponse {
   source?: string;
 }
 
+// Add new interface for user profile
+interface UserProfile {
+  avatar_url?: string;
+  username?: string;
+}
+
 const AutoResizeTextarea = ({ value, onChange, onKeyDown, placeholder, disabled }: {
   value: string;
   onChange: (value: string) => void;
@@ -92,10 +98,14 @@ const UrgencyBadge = ({ level }: { level?: 'normal' | 'serious' | 'emergency' })
   };
 
   return (
-    <span className={`text-xs px-2 py-1 rounded-full border ${config[level].color} font-medium flex items-center gap-1`}>
+    <motion.span 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`text-xs px-2 py-1 rounded-full border ${config[level].color} font-medium flex items-center gap-1`}
+    >
       {config[level].icon}
       {config[level].text}
-    </span>
+    </motion.span>
   );
 };
 
@@ -185,6 +195,21 @@ const MarkdownComponents = {
   )
 };
 
+// Add new loading component
+const LoadingIndicator = () => (
+  <div className="flex flex-col items-center justify-center gap-4 p-8">
+    <div className="relative w-16 h-16">
+      <div className="absolute inset-0 rounded-full border-4 border-[#FF823C]/20"></div>
+      <div className="absolute inset-0 rounded-full border-4 border-[#FF823C] border-t-transparent animate-spin"></div>
+      <IconRobot className="absolute inset-0 m-auto w-8 h-8 text-[#FF823C]" />
+    </div>
+    <div className="text-center">
+      <p className="text-gray-600 font-medium">Menginisialisasi PurrPal AI</p>
+      <p className="text-sm text-gray-500">Mohon tunggu sebentar...</p>
+    </div>
+  </div>
+);
+
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -193,9 +218,35 @@ export default function ChatbotPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastRecommendations, setLastRecommendations] = useState<string[]>([]);
   const [chatbotMode, setChatbotMode] = useState<string>('unknown');
+  const [userProfile, setUserProfile] = useState<UserProfile>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(`${API_BASE_URL}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUserProfile({
+        avatar_url: response.data.avatar_url,
+        username: response.data.username
+      });
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
+
+  // Add useEffect for fetching user profile
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -213,6 +264,7 @@ export default function ChatbotPage() {
 
   const checkChatbotHealth = async () => {
     try {
+      setIsInitializing(true);
       console.log('🏥 Checking chatbot health...');
       const response = await axios.get(`${API_BASE_URL}/chatbot/health`);
       
@@ -243,6 +295,8 @@ export default function ChatbotPage() {
       } else {
         setError('Tidak dapat terhubung ke layanan chatbot. Pastikan backend berjalan.');
       }
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -372,10 +426,10 @@ export default function ChatbotPage() {
   };
 
   const header = (
-    <div className="text-center space-y-4 py-8 md:py-12">
+    <div className="text-center space-y-4 py-8 md:py-12 bg-gradient-to-b from-white to-gray-50">
       <TextEffect>
         <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="p-3 bg-[#FF823C]/10 rounded-2xl">
+          <div className="p-3 bg-[#FF823C]/10 rounded-2xl backdrop-blur-sm">
             <IconRobot className="w-8 h-8 text-[#FF823C]" />
           </div>
           <div className="flex items-center gap-2">
@@ -408,178 +462,219 @@ export default function ChatbotPage() {
   );
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Main Container - Fixed height with proper spacing for navigation */}
-      <div className="flex-1 flex flex-col bg-white min-h-0 pt-16 md:pt-20">
-        {/* Header with status and clear button */}
+    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] overflow-hidden bg-gradient-to-b from-gray-50 to-white">
+      {/* Main Container with single scroll */}
+      <div className="relative h-full flex flex-col max-w-[1200px] mx-auto">
+        {/* Fixed Header */}
         {messages.length > 1 && (
-          <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-100 bg-white">
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              {isConnected ? (
-                <div className="flex items-center gap-2">
-                  <IconWifi className="w-4 h-4 text-green-500" />
-                  <span>Status: Terhubung</span>
-                  {chatbotMode && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                      {chatbotMode === 'testing' ? 'Test Mode' : 'AI Active'}
-                    </span>
+          <div className="flex-none bg-white/80 backdrop-blur-sm border-b border-gray-100">
+            <div className="px-4 md:px-6 lg:px-8">
+              <div className="flex justify-between items-center py-4">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  {isConnected ? (
+                    <div className="flex items-center gap-2">
+                      <IconWifi className="w-4 h-4 text-green-500" />
+                      <span>Status: Terhubung</span>
+                      {chatbotMode && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          {chatbotMode === 'testing' ? 'Test Mode' : 'AI Active'}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <IconWifiOff className="w-4 h-4 text-red-500" />
+                      <span>Status: Terputus</span>
+                    </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <IconWifiOff className="w-4 h-4 text-red-500" />
-                  <span>Status: Terputus</span>
-                </div>
-              )}
+                <button
+                  onClick={clearConversation}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <IconTrash className="w-4 h-4" />
+                  Hapus Riwayat
+                </button>
+              </div>
             </div>
-            <button
-              onClick={clearConversation}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <IconTrash className="w-4 h-4" />
-              Hapus Riwayat
-            </button>
           </div>
         )}
 
         {/* Error banner */}
         {error && (
-          <div className="flex-shrink-0 bg-red-50 border-l-4 border-red-400 p-4 m-4 rounded">
-            <div className="flex items-start">
-              <IconAlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={checkChatbotHealth}
-                    className="text-sm text-red-600 underline hover:text-red-800"
-                  >
-                    Coba lagi
-                  </button>
-                  <button
-                    onClick={() => setError(null)}
-                    className="text-sm text-gray-500 underline hover:text-gray-700"
-                  >
-                    Tutup
-                  </button>
+          <div className="flex-none">
+            <div className="px-4 md:px-6 lg:px-8 py-4">
+              <div className="bg-red-50/80 backdrop-blur-sm border-l-4 border-red-400 p-4 rounded">
+                <div className="flex items-start">
+                  <IconAlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={checkChatbotHealth}
+                        className="text-sm text-red-600 underline hover:text-red-800"
+                      >
+                        Coba lagi
+                      </button>
+                      <button
+                        onClick={() => setError(null)}
+                        className="text-sm text-gray-500 underline hover:text-gray-700"
+                      >
+                        Tutup
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Messages Container - Flexible height */}
-        <div 
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 pb-4"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          <div className="max-w-3xl mx-auto">
-            {messages.length === 1 && header}
-            
-            <AnimatePresence>
-              <div className="space-y-4 py-4">
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className={cn(
-                      "flex items-end gap-3",
-                      message.isUser ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {!message.isUser && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#FF823C]/10 flex items-center justify-center">
-                        <IconRobot className="w-5 h-5 text-[#FF823C]" />
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-2 max-w-[85%]">
-                      <div
+        {/* Messages Container - Single Scrollable Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 
+          [&::-webkit-scrollbar]:hidden 
+          [-ms-overflow-style:'none'] 
+          [scrollbar-width:'none']">
+          <div className="px-4 md:px-6 lg:px-8">
+            {isInitializing ? (
+              <LoadingIndicator />
+            ) : (
+              <>
+                {messages.length === 1 && header}
+                
+                <AnimatePresence>
+                  <div className="space-y-4 py-4">
+                    {messages.map((message, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
                         className={cn(
-                          "px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm",
-                          message.isUser
-                            ? "bg-[#FF823C] text-white rounded-br-none"
-                            : "bg-gray-100 text-gray-800 rounded-bl-none"
+                          "flex items-end gap-3",
+                          message.isUser ? "justify-end" : "justify-start"
                         )}
                       >
-                        {message.isUser ? (
-                          <p className="whitespace-pre-wrap">{message.text}</p>
+                        {!message.isUser ? (
+                          <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#FF823C]/10 backdrop-blur-sm flex items-center justify-center"
+                          >
+                            <IconRobot className="w-5 h-5 text-[#FF823C]" />
+                          </motion.div>
                         ) : (
-                          <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown
-                              components={MarkdownComponents}
-                              remarkPlugins={[remarkGfm]}
-                            >
-                              {message.text}
-                            </ReactMarkdown>
+                          <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="order-2 flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden"
+                          >
+                            <img 
+                              src={userProfile.avatar_url || '/icon/default-avatar.png'} 
+                              alt={userProfile.username || 'User'} 
+                              className="w-full h-full object-cover"
+                            />
+                          </motion.div>
+                        )}
+                        <div className={cn(
+                          "flex flex-col gap-2 max-w-[85%]",
+                          message.isUser && "order-1"
+                        )}>
+                          <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className={cn(
+                              "px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm backdrop-blur-sm",
+                              message.isUser
+                                ? "bg-gradient-to-br from-[#FF823C] to-[#FF9B5C] text-white rounded-br-none"
+                                : "bg-white border border-gray-100 text-gray-800 rounded-bl-none hover:border-[#FF823C]/20 transition-colors"
+                            )}
+                          >
+                            {message.isUser ? (
+                              <p className="whitespace-pre-wrap">{message.text}</p>
+                            ) : (
+                              <div className="prose prose-sm max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-900">
+                                <ReactMarkdown
+                                  components={MarkdownComponents}
+                                  remarkPlugins={[remarkGfm]}
+                                >
+                                  {message.text}
+                                </ReactMarkdown>
+                              </div>
+                            )}
+                            
+                            {/* Show recommendations for the latest bot message */}
+                            {!message.isUser && index === messages.length - 1 && (
+                              <RecommendationCard recommendations={lastRecommendations} />
+                            )}
+                          </motion.div>
+                          
+                          {/* Message metadata */}
+                          <div className={cn(
+                            "flex items-center gap-2 px-2 flex-wrap",
+                            message.isUser && "justify-end"
+                          )}>
+                            <UrgencyBadge level={message.urgencyLevel} />
+                            <PerformanceIndicator 
+                              responseTime={message.responseTime} 
+                              cached={message.cached} 
+                            />
+                            <span className="text-xs text-gray-400">
+                              {new Date(message.timestamp).toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
                           </div>
-                        )}
-                        
-                        {/* Show recommendations for the latest bot message */}
-                        {!message.isUser && index === messages.length - 1 && (
-                          <RecommendationCard recommendations={lastRecommendations} />
-                        )}
-                      </div>
-                      
-                      {/* Message metadata */}
-                      <div className="flex items-center gap-2 px-2 flex-wrap">
-                        <UrgencyBadge level={message.urgencyLevel} />
-                        <PerformanceIndicator 
-                          responseTime={message.responseTime} 
-                          cached={message.cached} 
-                        />
-                        <span className="text-xs text-gray-400">
-                          {new Date(message.timestamp).toLocaleTimeString('id-ID', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-                
-                {/* Loading indicator */}
-                {isLoading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-end gap-3 justify-start"
-                  >
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#FF823C]/10 flex items-center justify-center">
-                      <IconRobot className="w-5 h-5 text-[#FF823C]" />
-                    </div>
-                    <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-none">
-                      <div className="flex items-center gap-2">
-                        <IconLoader className="w-4 h-4 animate-spin text-[#FF823C]" />
-                        <span className="text-gray-600 text-sm">PurrPal AI sedang berpikir...</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </AnimatePresence>
-            <div ref={messagesEndRef} />
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {/* Loading indicator */}
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-end gap-3 justify-start"
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#FF823C]/10 backdrop-blur-sm flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full border-2 border-[#FF823C] border-t-transparent animate-spin" />
+                        </div>
+                        <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-bl-none backdrop-blur-sm">
+                          <div className="flex items-center gap-3">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-[#FF823C]/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-2 h-2 bg-[#FF823C]/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-2 h-2 bg-[#FF823C]/60 rounded-full animate-bounce"></div>
+                            </div>
+                            <span className="text-gray-600 text-sm">PurrPal AI sedang berpikir...</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </AnimatePresence>
+                <div ref={messagesEndRef} />
+              </>
+            )}
           </div>
         </div>
 
-        {/* Input Form - Fixed at bottom */}
-        <div className="flex-shrink-0 bg-white px-4 md:px-6 lg:px-8 py-4 border-t border-gray-100 safe-area-bottom">
-          <div className="max-w-3xl mx-auto">
+        {/* Fixed Input Form */}
+        <div className="flex-none bg-white/80 backdrop-blur-sm border-t border-gray-100">
+          <div className="px-4 md:px-6 lg:px-8 py-4">
             <div className={cn(
-              "relative flex items-start bg-gray-50 rounded-2xl border border-gray-200 shadow-sm transition-all",
+              "relative flex items-start bg-white rounded-2xl border shadow-sm transition-all",
               isConnected 
-                ? "focus-within:border-[#FF823C] focus-within:ring-1 focus-within:ring-[#FF823C]"
-                : "border-red-200 bg-red-50"
+                ? "border-gray-200 focus-within:border-[#FF823C] focus-within:ring-1 focus-within:ring-[#FF823C] focus-within:shadow-lg"
+                : "border-red-200 bg-red-50/50"
             )}>
               <AutoResizeTextarea
                 value={inputMessage}
                 onChange={setInputMessage}
                 onKeyDown={handleKeyDown}
-                placeholder={isConnected ? "Ketik pesan Anda di sini..." : "Chatbot tidak tersedia..."}
+                placeholder={isConnected ? "Ketik pesan Anda di sini..." : "Menghubungkan ke PurrPal AI..."}
                 disabled={!isConnected || isLoading}
               />
               <div className="flex-shrink-0 p-2">
@@ -589,19 +684,13 @@ export default function ChatbotPage() {
                   className="p-2 text-[#FF823C] hover:text-[#FF823C]/80 transition-colors rounded-lg hover:bg-[#FF823C]/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
-                    <IconLoader className="w-5 h-5 animate-spin" />
+                    <div className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                   ) : (
                     <IconSend className="w-5 h-5" />
                   )}
                 </button>
               </div>
             </div>
-            
-            {!isConnected && (
-              <p className="text-center text-sm text-red-600 mt-2">
-                Layanan chatbot sedang tidak tersedia. Silakan coba lagi nanti atau periksa koneksi Anda.
-              </p>
-            )}
             
             {chatbotMode === 'testing' && isConnected && (
               <p className="text-center text-xs text-yellow-600 mt-1">

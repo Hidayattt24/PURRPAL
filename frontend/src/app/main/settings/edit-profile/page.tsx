@@ -6,6 +6,7 @@ import { IconChevronLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateUserData } from "@/lib/utils/user";
+import { toast } from "sonner";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -114,12 +115,19 @@ export default function EditProfilePage() {
 
       setSuccess(true);
 
+      toast.success('Profile updated successfully!', {
+        description: 'Your profile changes have been saved.'
+      });
+
       // Redirect back to settings after a short delay
       setTimeout(() => {
         router.push('/main/settings');
       }, 1500);
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error('Failed to update profile', {
+        description: error instanceof Error ? error.message : 'Please try again later'
+      });
       setError(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setIsLoading(false);

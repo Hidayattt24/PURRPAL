@@ -5,6 +5,7 @@ import { IconArrowLeft, IconCamera, IconMapPin, IconX } from "@tabler/icons-reac
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CreateStoryPage() {
   const router = useRouter();
@@ -57,8 +58,12 @@ export default function CreateStoryPage() {
               name: data.display_name.split(',')[0],
               address: data.display_name
             });
+            toast.success('Location added successfully');
           } catch (error) {
             console.error("Error getting location details:", error);
+            toast.error('Failed to get location details', {
+              description: 'Using coordinates as fallback'
+            });
             // Fallback to coordinates if geocoding fails
             setLocation({
               name: "Current Location",
@@ -68,11 +73,15 @@ export default function CreateStoryPage() {
         },
         (error) => {
           console.error("Error getting location:", error);
-          alert("Unable to get your location. Please try again.");
+          toast.error('Unable to get your location', {
+            description: 'Please check your location permissions and try again'
+          });
         }
       );
     } else {
-      alert("Location services are not available in your browser.");
+      toast.error('Location services unavailable', {
+        description: 'Your browser does not support location services'
+      });
     }
   };
 
@@ -118,11 +127,18 @@ export default function CreateStoryPage() {
         throw new Error(data.details || data.error || 'Failed to create story');
       }
 
+      // Show success notification
+      toast.success('Story shared successfully!', {
+        description: 'Your story has been posted to the community.',
+      });
+
       // Redirect to home page after successful creation
       router.push('/main/home');
     } catch (error) {
       console.error('Error creating story:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create story. Please try again.');
+      toast.error('Failed to share story', {
+        description: error instanceof Error ? error.message : 'Please try again later',
+      });
     } finally {
       setIsSubmitting(false);
     }
