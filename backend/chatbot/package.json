@@ -1,0 +1,76 @@
+{
+  "name": "purrpal-chatbot-enhanced",
+  "version": "2.0.0",
+  "description": "Enhanced PurrPal AI Chatbot for Cat Care with advanced features, monitoring, and robust error handling",
+  "main": "src/chatbot.js",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "node src/chatbot.js",
+    "dev": "node --watch src/chatbot.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "clean": "rm -rf node_modules package-lock.json",
+    "reinstall": "npm run clean && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notsuperganang/purrpal-chatbot-integration.git"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "cat-care",
+    "veterinary",
+    "gemini",
+    "vertex-ai",
+    "google-cloud",
+    "pet-health",
+    "indonesia",
+    "machine-learning",
+    "conversational-ai"
+  ],
+  "author": {
+    "name": "PurrPal Team",
+    "email": "team@purrpal.id",
+    "url": "https://github.com/notsuperganang"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/notsuperganang/purrpal-chatbot-integration/issues"
+  },
+  "homepage": "https://github.com/notsuperganang/purrpal-chatbot-integration#readme",
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "joi": "^17.13.3",
+    "winston": "^3.17.0",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.4.1",
+    "compression": "^1.7.5",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "optionalDependencies": {
+    "redis": "^4.7.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/notsuperganang"
+  }
+}

@@ -13,7 +13,7 @@ async function initializeChatbot() {
     console.log('🤖 Initializing PurrPal Chatbot...');
     
     // Adjust path to point to chatbot submodule
-    const chatbotPath = path.resolve(__dirname, '../../../chatbot/src/chatbot.js');
+    const chatbotPath = path.resolve(__dirname, '../../chatbot/src/chatbot.js');
     console.log('📁 Chatbot path:', chatbotPath);
     
     const { chatbot } = require(chatbotPath);
