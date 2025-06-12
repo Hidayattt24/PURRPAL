@@ -71,5 +71,6 @@ def predict():
         }), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8002))
+    # Use PORT env variable with fallback to 8080 (GCP Cloud Run default)
+    port = int(os.getenv('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
