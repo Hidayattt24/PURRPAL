@@ -4,39 +4,74 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { config, debugConfig, testApiConnectivity, apiClient } from "@/lib/config";
+import { config, debugConfig, testApiConnectivity, apiClient, waitForRuntimeEnv } from "@/lib/config";
 
 export default function LoginPage() {
     const router = useRouter();
     const [error, setError] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isEnvReady, setIsEnvReady] = useState<boolean>(false);
     const [connectionTested, setConnectionTested] = useState<boolean>(false);
 
-    // Debug and test connectivity on component mount
+    // Initialize app and wait for runtime environment
     useEffect(() => {
         const initializeApp = async () => {
-            // Debug configuration
-            debugConfig();
+            console.log('🚀 Initializing PurrPal Frontend...');
             
-            // Test API connectivity
-            console.log('🔍 Testing API connectivity...');
-            const isConnected = await testApiConnectivity();
-            setConnectionTested(true);
+            // Wait for runtime environment to be available
+            console.log('⏳ Waiting for runtime environment...');
+            const envReady = await waitForRuntimeEnv(10000); // 10 second timeout
             
-            if (!isConnected) {
-                console.warn('⚠️ API connectivity test failed');
-                toast.warning('Connection Warning', {
-                    description: 'Unable to reach the server. You may experience issues logging in.',
-                });
+            if (envReady) {
+                console.log('✅ Runtime environment is ready');
+                setIsEnvReady(true);
+                
+                // Debug configuration
+                debugConfig();
+                
+                // Test API connectivity
+                console.log('🔍 Testing API connectivity...');
+                const isConnected = await testApiConnectivity();
+                setConnectionTested(true);
+                
+                if (!isConnected) {
+                    console.warn('⚠️ API connectivity test failed');
+                    toast.warning('Connection Warning', {
+                        description: 'Unable to reach the server. You may experience issues logging in.',
+                    });
+                } else {
+                    console.log('✅ API connectivity confirmed');
+                }
             } else {
-                console.log('✅ API connectivity confirmed');
+                console.warn('⚠️ Runtime environment not loaded, using fallback configuration');
+                setIsEnvReady(true); // Continue anyway with fallback
+                debugConfig();
             }
         };
 
         initializeApp();
+
+        // Also listen for runtime env loaded event
+        const handleEnvLoaded = () => {
+            console.log('📡 Runtime environment loaded event received');
+            setIsEnvReady(true);
+        };
+
+        window.addEventListener('runtimeEnvLoaded', handleEnvLoaded);
+        
+        return () => {
+            window.removeEventListener('runtimeEnvLoaded', handleEnvLoaded);
+        };
     }, []);
 
     const handleLogin = async (data: { email: string; password: string }) => {
+        if (!isEnvReady) {
+            toast.error('System not ready', {
+                description: 'Please wait for the application to finish loading.',
+            });
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError("");
@@ -120,12 +155,12 @@ export default function LoginPage() {
                 if (err.message.includes('Failed to fetch')) {
                     console.error('🌐 Network/CORS Error Details:');
                     console.error('- API URL:', config.apiUrl);
-                    console.error('- Current origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
+                    console.error('- Current origin:', window.location.origin);
                     console.error('- Possible causes:');
                     console.error('  1. Backend server is down');
                     console.error('  2. CORS configuration issue');
                     console.error('  3. Network connectivity problem');
-                    console.error('  4. Incorrect API URL');
+                    console.error('  4. Incorrect API URL configuration');
                     
                     userMessage = 'Unable to connect to the server';
                     toastDescription = 'Please check your internet connection and try again. If the problem persists, contact support.';
@@ -147,13 +182,24 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen">
+            {/* Environment loading indicator */}
+            {!isEnvReady && (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-800 px-6 py-3 rounded-lg text-sm z-50 shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Loading environment configuration...</span>
+                    </div>
+                </div>
+            )}
+
             {/* Development debug panel */}
-            {config.isDevelopment && (
+            {config.isDevelopment && isEnvReady && (
                 <div className="fixed top-0 right-0 bg-gray-900 text-white p-3 text-xs z-50 max-w-sm border-l border-b rounded-bl-lg">
                     <div className="space-y-1">
                         <div className="font-bold text-green-400">🛠️ Debug Panel</div>
                         <div>API: {config.apiUrl}</div>
                         <div>ENV: {process.env.NODE_ENV}</div>
+                        <div>Runtime Env: {isEnvReady ? '✅ Loaded' : '⏳ Loading...'}</div>
                         <div>Connection: {connectionTested ? '✅ Tested' : '⏳ Testing...'}</div>
                         <div className="text-xs text-gray-400 mt-2">
                             Check console for detailed logs
@@ -163,8 +209,8 @@ export default function LoginPage() {
             )}
             
             {/* Connection status indicator */}
-            {!connectionTested && (
-                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm z-40">
+            {isEnvReady && !connectionTested && (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm z-40">
                     🔍 Testing server connectivity...
                 </div>
             )}
@@ -173,7 +219,7 @@ export default function LoginPage() {
                 mode="login" 
                 onSubmit={handleLogin} 
                 error={error} 
-                isLoading={isLoading} 
+                isLoading={isLoading || !isEnvReady} 
             />
         </div>
     );
