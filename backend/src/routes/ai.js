@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 
+// Configure body-parser limits
+router.use(express.json({limit: '50mb'}));
+router.use(express.urlencoded({limit: '50mb', extended: true}));
+
 // ML Service Configuration
 const ML_TABULAR_SERVICE_URL = process.env.ML_TABULAR_SERVICE_URL || 'http://localhost:8001';
 const ML_VISION_SERVICE_URL = process.env.ML_VISION_SERVICE_URL || 'http://localhost:8002';
@@ -167,13 +171,15 @@ router.post('/detect-image', auth, async (req, res) => {
 
     // Call vision service
     console.log('Making prediction request to Vision service...');
+    console.log('Cat info:', cat_info);
+    
     const mlResponse = await fetch(`${ML_VISION_SERVICE_URL}/predict`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        image: image_url,
+        image: image_url, // Frontend already sends base64 image data
         cat_info
       })
     });
@@ -195,8 +201,20 @@ router.post('/detect-image', auth, async (req, res) => {
       confidence: prediction.data.confidence
     });
 
-    // Return the prediction data directly
-    res.json(prediction);
+    // Format response for frontend
+    res.json({
+      success: true,
+      data: {
+        predicted_disease: prediction.data.predicted_disease,
+        confidence: prediction.data.confidence,
+        diagnosis: prediction.data.diagnosis,
+        recommendations: prediction.data.recommendations,
+        accuracy: prediction.data.accuracy,
+        cat_info: prediction.data.cat_info,
+        active_symptoms: prediction.data.active_symptoms || [prediction.data.predicted_disease],
+        all_probabilities: prediction.data.all_probabilities
+      }
+    });
 
   } catch (error) {
     console.error('Error in detect-image:', error);
