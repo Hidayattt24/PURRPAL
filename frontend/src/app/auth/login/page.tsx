@@ -2,12 +2,13 @@
 
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { toast } from "sonner";
 import { config, debugConfig, testApiConnectivity, apiClient, waitForRuntimeEnv } from "@/lib/config";
 import Cookies from 'js-cookie';
 
-export default function LoginPage() {
+// Create a client component for the login form
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState<string>("");
@@ -228,5 +229,18 @@ export default function LoginPage() {
                 isLoading={isLoading || !isEnvReady} 
             />
         </div>
+    );
+}
+
+// Main page component with Suspense
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

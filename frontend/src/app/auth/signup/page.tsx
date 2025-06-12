@@ -2,11 +2,12 @@
 
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { toast } from "sonner";
 import Cookies from 'js-cookie';
 
-export default function SignUpPage() {
+// Create a client component for the signup form
+function SignUpForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState<string>("");
@@ -60,5 +61,18 @@ export default function SignUpPage() {
         <div className="min-h-screen">
             <AuthForm mode="signup" onSubmit={handleSignUp} error={error} isLoading={isLoading} />
         </div>
+    );
+}
+
+// Main page component with Suspense
+export default function SignUpPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+        }>
+            <SignUpForm />
+        </Suspense>
     );
 }
