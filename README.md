@@ -9,7 +9,7 @@
 ## ✨ Fitur Utama
 
   - **🩺 Pengecek Gejala AI:** Dapatkan analisis gejala awal penyakit pada kucing Anda menggunakan model Machine Learning kami untuk panduan dan penanganan pertama.
-  - **👁️ Pemindai Kesehatan Mata AI:** Unggah foto mata kucing Anda untuk mendapatkan prediksi awal kondisi kesehatan mata menggunakan model Computer Vision.
+  - **⛑️ Pemindai Kesehatan AI:** Unggah foto kucing Anda untuk mendapatkan prediksi awal kondisi kesehatan menggunakan model Computer Vision.
   - **💬 Chatbot Interaktif:** Ajukan pertanyaan seputar kesehatan dan perawatan kucing kepada chatbot cerdas berbasis AI Generatif yang siap membantu 24/7.
   - **🗺️ Peta Veteriner:** Temukan lokasi dokter hewan dan klinik terdekat dengan mudah melalui fitur peta interaktif kami.
   - **📚 Modul Edukasi:** Tingkatkan pengetahuan Anda tentang perawatan kucing melalui modul pembelajaran yang lengkap dan mudah dipahami.
