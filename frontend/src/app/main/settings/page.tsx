@@ -77,7 +77,7 @@ export default function SettingsPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header Section */}
         <div className="flex items-center justify-center mb-8">
-          <h1 className="text-2xl font-semibold">Settings</h1>
+          <h1 className="text-2xl font-semibold">Pengaturan</h1>
         </div>
 
         {/* Main Content */}
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-green-100 flex items-center justify-center">
                   <Image
                     src={user.avatar_url || "/main/home/placeholder-avatar.jpg"}
-                    alt="Profile"
+                    alt="Profil"
                     width={128}
                     height={128}
                     className="object-cover"
@@ -113,7 +113,7 @@ export default function SettingsPage() {
 
           {/* Account Section */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg">
-            <h3 className="text-lg font-semibold mb-6">Account</h3>
+            <h3 className="text-lg font-semibold mb-6">Akun</h3>
             <div className="space-y-4">
               <Link href="/main/settings/edit-profile">
                 <motion.div
@@ -124,7 +124,7 @@ export default function SettingsPage() {
                     <div className="bg-orange-100 p-3 rounded-xl">
                       <IconEdit className="w-5 h-5 text-orange-500" />
                     </div>
-                    <span className="font-medium">Edit Profile</span>
+                    <span className="font-medium">Ubah Profil</span>
                   </div>
                   <IconChevronRight className="w-5 h-5 text-gray-400" />
                 </motion.div>
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                     <div className="bg-orange-100 p-3 rounded-xl">
                       <IconLock className="w-5 h-5 text-orange-500" />
                     </div>
-                    <span className="font-medium">Change Password</span>
+                    <span className="font-medium">Ubah Kata Sandi</span>
                   </div>
                   <IconChevronRight className="w-5 h-5 text-gray-400" />
                 </motion.div>
@@ -174,7 +174,7 @@ export default function SettingsPage() {
                 className="w-full py-4 bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
               >
                 <IconLogout className="w-5 h-5" />
-                Log Out
+                Keluar
               </motion.button>
             </Dialog.Trigger>
 
@@ -182,10 +182,10 @@ export default function SettingsPage() {
               <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
               <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-3xl">
                 <Dialog.Title className="text-xl font-semibold">
-                  Confirm Logout
+                  Konfirmasi Keluar
                 </Dialog.Title>
                 <Dialog.Description className="text-gray-600">
-                  Are you sure you want to log out of your account?
+                  Apakah Anda yakin ingin keluar dari akun Anda?
                 </Dialog.Description>
 
                 <div className="flex gap-4 mt-4">
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                       whileTap={{ scale: 0.98 }}
                       className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
-                      Cancel
+                      Batal
                     </motion.button>
                   </Dialog.Close>
                   <motion.button
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                     onClick={handleLogout}
                     className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
                   >
-                    Log Out
+                    Keluar
                   </motion.button>
                 </div>
               </Dialog.Content>

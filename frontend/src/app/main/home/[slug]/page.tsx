@@ -152,13 +152,13 @@ export default function CreateStoryPage() {
           <Link href="/main/home" className="text-neutral-600 hover:text-neutral-800">
             <IconArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-lg font-medium">Tell Your Story</h1>
+          <h1 className="text-lg font-medium">Ceritakan Kisahmu</h1>
           <button 
             className="px-4 py-2 bg-[#FF823C] text-white rounded-full text-sm font-medium disabled:opacity-50"
             disabled={!message || isSubmitting}
             onClick={handleSubmit}
           >
-            {isSubmitting ? 'Sharing...' : 'Share'}
+            {isSubmitting ? 'Membagikan...' : 'Bagikan'}
           </button>
         </div>
       </div>
@@ -168,18 +168,18 @@ export default function CreateStoryPage() {
         <div className="space-y-6">
           {/* Message Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700">Your Story:</label>
+            <label className="text-sm font-medium text-neutral-700">Ceritamu:</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Share your story..."
+              placeholder="Bagikan ceritamu..."
               className="w-full h-40 px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] placeholder:text-neutral-400 resize-none"
             />
           </div>
 
           {/* Location and Image Section */}
           <div className="space-y-4">
-            <label className="text-sm font-medium text-neutral-700">Add My Location (Optional):</label>
+            <label className="text-sm font-medium text-neutral-700">Tambahkan Lokasiku (Opsional):</label>
             
             {location ? (
               <div className="space-y-4">
@@ -204,18 +204,18 @@ export default function CreateStoryPage() {
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-neutral-300 hover:border-[#FF823C] transition-colors"
               >
                 <IconMapPin className="w-5 h-5 text-[#FF823C]" />
-                <span className="text-sm text-neutral-600">Add my current location</span>
+                <span className="text-sm text-neutral-600">Tambahkan lokasi saat ini</span>
               </button>
             )}
 
             {/* Photo Upload Section */}
             <div className="mt-4">
-              <label className="text-sm font-medium text-neutral-700 block mb-2">Add a Photo:</label>
+              <label className="text-sm font-medium text-neutral-700 block mb-2">Tambahkan Foto:</label>
               {selectedImage ? (
                 <div className="relative w-full rounded-xl overflow-hidden">
                   <img
                     src={selectedImage}
-                    alt="Selected"
+                    alt="Terpilih"
                     className="w-full h-auto max-h-[300px] object-contain"
                   />
                   <button
@@ -237,7 +237,7 @@ export default function CreateStoryPage() {
                     onChange={handleImageUpload}
                   />
                   <IconCamera className="w-8 h-8 mx-auto mb-2 text-neutral-400" />
-                  <p className="text-sm text-neutral-600">Click to upload a photo</p>
+                  <p className="text-sm text-neutral-600">Klik untuk mengunggah foto</p>
                 </label>
               )}
             </div>

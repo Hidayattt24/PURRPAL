@@ -36,19 +36,19 @@ export const FeatureSection = () => {
     <section className="py-20 px-4 bg-gradient-to-b from-white to-orange-50/30">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#FF823C] to-[#C54F0C] bg-clip-text text-transparent font-poppins">Everything your cat needs</h2>
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#FF823C] to-[#C54F0C] bg-clip-text text-transparent font-poppins">Fitur Lengkap untuk Pembelajaran Anda</h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-            Comprehensive tools and expert-backed features to help you provide the best care for your feline friend
+            Berbagai fitur canggih dan inovatif untuk mendukung proses pembelajaran Anda dengan cara yang lebih interaktif dan efektif
           </p>
         </div>
 
         <div className="grid grid-cols-12 gap-4 max-w-7xl mx-auto">
-          {/* AI Health Detection - Large Card */}
+          {/* AI Learning Assistant - Large Card */}
           <div className="col-span-12 md:col-span-7">
             <BentoCard
               className="h-full"
-              title="AI-Powered Disease & Health Detection"
-              description="Instantly screen your cat's health using advanced AI — detect early signs of illness and get personalized care recommendations."
+              title="Asisten Pembelajaran AI"
+              description="Dapatkan bantuan pembelajaran personal dengan AI canggih yang dapat membantu Anda memahami materi dengan lebih baik dan menjawab pertanyaan Anda secara real-time."
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -70,10 +70,10 @@ export const FeatureSection = () => {
 
           {/* Right Side Cards */}
           <div className="col-span-12 md:col-span-5 grid gap-4">
-            {/* Community Support */}
+            {/* Chatbot Support */}
             <BentoCard
-              title="24/7 Cat Owner Community & Vet-backed Advice"
-              description="Connect with fellow cat lovers and get trusted advice anytime — backed by expert veterinarians and experienced owners."
+              title="Chatbot Pembelajaran Interaktif"
+              description="Belajar menjadi lebih menyenangkan dengan chatbot pintar yang siap membantu Anda 24/7. Tanyakan apa saja tentang materi pembelajaran Anda."
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -92,10 +92,10 @@ export const FeatureSection = () => {
               }
             />
 
-            {/* Emergency Care */}
+            {/* Interactive Modules */}
             <BentoCard
-              title="Vet-Approved Emergency Care Guide"
-              description="Access life-saving first aid tips and emergency care guides, curated by veterinary professionals — be prepared when it matters most."
+              title="Modul Pembelajaran Interaktif"
+              description="Akses berbagai modul pembelajaran yang dirancang secara interaktif untuk memudahkan pemahaman materi. Dilengkapi dengan latihan dan evaluasi."
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -117,11 +117,11 @@ export const FeatureSection = () => {
 
           {/* Bottom Cards */}
           <div className="col-span-12 md:col-span-4">
-            {/* Daily Care Tips */}
+            {/* Post Feature */}
             <BentoCard
               className="h-full"
-              title="Vet & AI-Powered Daily Care Tips"
-              description="Receive personalized daily tips and wellness reminders — developed with veterinarians to keep your cat happy and healthy."
+              title="Fitur Posting Kucing"
+              description="Bagikan momen spesial bersama kucing kesayangan Anda. Posting foto, cerita, dan pengalaman merawat kucing untuk menginspirasi komunitas pecinta kucing lainnya."
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -134,19 +134,19 @@ export const FeatureSection = () => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                    d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
                   />
                 </svg>
               }
             />
           </div>
 
-          {/* Vet Locator - Wide Card */}
+          {/* Map Feature - Wide Card */}
           <div className="col-span-12 md:col-span-8">
             <BentoCard
               className="h-full"
-              title="Find Trusted Vets Near You — Anytime"
-              description="Locate and connect with verified veterinarians around you. Whether routine check-up or urgent care, help is just a tap away."
+              title="Peta Pembelajaran Interaktif"
+              description="Visualisasikan perjalanan pembelajaran Anda dengan peta interaktif. Temukan koneksi antar materi dan rencanakan rute belajar yang optimal untuk mencapai tujuan Anda."
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

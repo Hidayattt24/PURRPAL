@@ -6,6 +6,7 @@ import { IconChevronLeft, IconUpload, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function EditPhotoPage() {
   const router = useRouter();
@@ -47,36 +48,43 @@ export default function EditPhotoPage() {
   }, [router]);
 
   const validateFile = (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (!validTypes.includes(file.type)) {
-      return "File type not supported. Please upload a JPG, PNG, GIF, or WebP file.";
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error('Ukuran file terlalu besar. Maksimum 2MB.');
     }
 
-    if (file.size > maxSize) {
-      return "File size too large. Maximum size is 5MB.";
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File harus berupa gambar (JPG, PNG).');
     }
 
-    return null;
+    return true;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setError("");
+    setError('');
 
     if (file) {
-      const validationError = validateFile(file);
-      if (validationError) {
-        setError(validationError);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        return;
-      }
+      try {
+        validateFile(file);
+        setSelectedFile(file);
 
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('Terjadi kesalahan saat memilih file.');
+        }
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      }
     }
   };
 
@@ -85,76 +93,69 @@ export default function EditPhotoPage() {
   };
 
   const handleRemovePhoto = async () => {
-    setError("");
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
+      setError('');
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/auth/login');
         return;
       }
 
-      // Update profile with null avatar_url
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-        method: 'PUT',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/photo`, {
+        method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ avatar_url: null })
+          'Authorization': `Bearer ${token}`
+        }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to remove photo');
+        throw new Error(data.error || 'Gagal menghapus foto');
       }
 
-      setPreviewUrl(null);
-      setCurrentPhoto(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      toast.success('Foto profil berhasil dihapus!', {
+        description: 'Foto profil Anda telah dihapus.'
+      });
 
-      // Update local storage
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        localStorage.setItem('user', JSON.stringify({
-          ...parsedUser,
-          avatar_url: null
-        }));
-      }
+      // Update user data in localStorage and trigger update event
+      window.dispatchEvent(new CustomEvent('userDataUpdated'));
+
+      // Redirect back to settings after a short delay
+      setTimeout(() => {
+        router.push('/main/settings');
+      }, 2000);
     } catch (error) {
       console.error('Error removing photo:', error);
-      setError('Failed to remove photo');
+      toast.error('Gagal menghapus foto', {
+        description: error instanceof Error ? error.message : 'Silakan coba lagi nanti'
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    if (!previewUrl) return;
-
-    setError("");
-    setIsLoading(true);
+    if (!selectedFile) {
+      setError('Silakan pilih file terlebih dahulu.');
+      return;
+    }
 
     try {
+      setIsLoading(true);
+      setError('');
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/auth/login');
         return;
       }
 
-      const file = fileInputRef.current?.files?.[0];
-      if (!file) {
-        throw new Error('No file selected');
-      }
-
-      // Create form data
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('photo', selectedFile);
 
-      // Upload photo
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/photo`, {
         method: 'PUT',
         headers: {
@@ -166,24 +167,25 @@ export default function EditPhotoPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload photo');
+        throw new Error(data.error || 'Gagal mengunggah foto');
       }
 
-      // Update local storage
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        localStorage.setItem('user', JSON.stringify({
-          ...parsedUser,
-          avatar_url: data.avatar_url
-        }));
-      }
+      toast.success('Foto profil berhasil diubah!', {
+        description: 'Foto profil Anda telah diperbarui.'
+      });
 
-      // Redirect back to settings
-      router.push('/main/settings');
+      // Update user data in localStorage and trigger update event
+      window.dispatchEvent(new CustomEvent('userDataUpdated'));
+
+      // Redirect back to settings after a short delay
+      setTimeout(() => {
+        router.push('/main/settings');
+      }, 2000);
     } catch (error) {
       console.error('Error uploading photo:', error);
-      setError(error instanceof Error ? error.message : 'Failed to upload photo');
+      toast.error('Gagal mengunggah foto', {
+        description: error instanceof Error ? error.message : 'Silakan coba lagi nanti'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -199,13 +201,13 @@ export default function EditPhotoPage() {
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <IconChevronLeft className="w-5 h-5" />
-            <span className="ml-2 text-lg">Back to Settings</span>
+            <span className="ml-2 text-lg">Kembali ke Pengaturan</span>
           </Link>
         </div>
 
         {/* Photo Upload Section */}
         <div className="bg-white rounded-3xl p-8 shadow-lg">
-          <h1 className="text-2xl font-semibold mb-6">Change Profile Photo</h1>
+          <h1 className="text-2xl font-semibold mb-6">Ubah Foto Profil</h1>
           
           <div className="space-y-6">
             {error && (
@@ -286,7 +288,7 @@ export default function EditPhotoPage() {
 
             <div className="text-sm text-gray-500 text-center">
               <p>Supported formats: JPG, PNG, GIF, WebP</p>
-              <p>Maximum file size: 5MB</p>
+              <p>Maximum file size: 2MB</p>
             </div>
           </div>
         </div>

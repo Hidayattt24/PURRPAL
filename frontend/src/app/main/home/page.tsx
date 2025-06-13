@@ -171,19 +171,18 @@ export default function HomePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-neutral-800">
-                  Welcome back, <span className="text-[#FF823C]">{user?.username || "User"}</span>
+                  Selamat datang kembali, <span className="text-[#FF823C]">{user?.username || "Pengguna"}</span>
                 </h1>
                 <p className="text-neutral-600">{user?.full_name}</p>
-            
               </div>
             </div>
 
             <motion.div whileHover={{ scale: 1.05 }} className="text-right">
-              <div className="text-sm text-neutral-500">Today</div>
+              <div className="text-sm text-neutral-500">Hari ini</div>
               <div className="text-lg font-semibold text-neutral-800">
-                {new Date().toLocaleDateString("en-US", {
+                {new Date().toLocaleDateString("id-ID", {
                   weekday: "long",
-                  month: "short",
+                  month: "long",
                   day: "numeric",
                 })}
               </div>
@@ -202,13 +201,13 @@ export default function HomePage() {
           className="text-center mb-12"
         >
           <h2 className="text-balance text-4xl md:text-5xl lg:text-6xl font-semibold leading-none tracking-tighter mb-6">
-            Share Your Journey with{" "}
+            Bagikan Perjalananmu dengan{" "}
             <LineShadowText className="italic" shadowColor={shadowColor}>
               PurrPal
             </LineShadowText>
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto mb-8">
-            Connect with fellow cat lovers, share your experiences, and discover amazing stories from our community
+            Terhubung dengan sesama pecinta kucing, bagikan pengalamanmu, dan temukan cerita menarik dari komunitas kami
           </p>
 
           <Link href="/main/home/create">
@@ -229,7 +228,7 @@ export default function HomePage() {
                   WebkitClipPath: "padding-box",
                 }}
               />
-              <AnimatedGradientText className="text-lg font-semibold">✨ Create Your Story</AnimatedGradientText>
+              <AnimatedGradientText className="text-lg font-semibold">✨ Buat Ceritamu</AnimatedGradientText>
               <ChevronRight className="ml-2 size-5 stroke-[#FF823C] transition-transform duration-300 ease-in-out group-hover:translate-x-1" />
             </motion.div>
           </Link>
@@ -243,8 +242,8 @@ export default function HomePage() {
           className="relative"
         >
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-neutral-800 mb-2">Community Stories</h3>
-            <p className="text-neutral-600">Discover heartwarming tales from our cat-loving community</p>
+            <h3 className="text-2xl font-bold text-neutral-800 mb-2">Cerita Komunitas</h3>
+            <p className="text-neutral-600">Temukan cerita menarik dari komunitas pecinta kucing kami</p>
           </div>
 
           <div className="relative w-full py-10 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-3xl overflow-hidden">
@@ -289,7 +288,7 @@ export default function HomePage() {
               className="bg-white rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-neutral-800">Create New Story</h3>
+                <h3 className="text-2xl font-bold text-neutral-800">Buat Cerita Baru</h3>
                 <button
                   onClick={() => setIsCreatingStory(false)}
                   className="text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -300,11 +299,11 @@ export default function HomePage() {
               <div className="space-y-4">
                 <input
                   type="text"
-                  placeholder="What's on your mind?"
+                  placeholder="Apa yang ingin kamu bagikan?"
                   className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] focus:border-transparent"
                 />
                 <textarea
-                  placeholder="Share your story..."
+                  placeholder="Ceritakan pengalamanmu..."
                   className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#FF823C] focus:border-transparent min-h-[120px] resize-none"
                 />
                 <div className="flex justify-end gap-3">
@@ -312,14 +311,14 @@ export default function HomePage() {
                     onClick={() => setIsCreatingStory(false)}
                     className="px-6 py-2 text-neutral-600 hover:text-neutral-800 transition-colors"
                   >
-                    Cancel
+                    Batal
                   </button>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="px-6 py-2 bg-gradient-to-r from-[#FF823C] to-[#C54F0C] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
                   >
-                    Share Story
+                    Bagikan Cerita
                   </motion.button>
                 </div>
               </div>

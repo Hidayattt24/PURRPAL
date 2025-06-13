@@ -74,16 +74,14 @@ export default function EditProfilePage() {
     setIsLoading(true);
 
     try {
-      // Validate username if it has changed
-      if (formData.username !== originalUsername) {
-        if (!validateUsername(formData.username)) {
-          throw new Error("Username must be 3-20 characters long and contain only letters, numbers, and underscores");
-        }
+      // Basic validation
+      if (!formData.username || !formData.full_name) {
+        throw new Error("Nama pengguna dan nama lengkap harus diisi");
       }
 
-      // Validate full name
-      if (!formData.full_name.trim()) {
-        throw new Error("Full name is required");
+      // Username validation
+      if (!validateUsername(formData.username)) {
+        throw new Error("Nama pengguna hanya boleh mengandung huruf, angka, dan underscore");
       }
 
       const token = localStorage.getItem('token');
@@ -92,6 +90,7 @@ export default function EditProfilePage() {
         return;
       }
 
+      // Send request to backend
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
         method: 'PUT',
         headers: {
@@ -104,31 +103,25 @@ export default function EditProfilePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 400 && data.error.includes('username already exists')) {
-          throw new Error('Username is already taken');
-        }
-        throw new Error(data.error || 'Failed to update profile');
+        throw new Error(data.error || 'Gagal memperbarui profil');
       }
 
-      // Update user data in localStorage and trigger update event
-      updateUserData(formData);
-
-      setSuccess(true);
-
-      toast.success('Profile updated successfully!', {
-        description: 'Your profile changes have been saved.'
+      toast.success('Profil berhasil diperbarui!', {
+        description: 'Informasi profil Anda telah diperbarui.'
       });
+
+      // Update user data in localStorage and trigger update event
+      window.dispatchEvent(new CustomEvent('userDataUpdated'));
 
       // Redirect back to settings after a short delay
       setTimeout(() => {
         router.push('/main/settings');
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile', {
-        description: error instanceof Error ? error.message : 'Please try again later'
+      toast.error('Gagal memperbarui profil', {
+        description: error instanceof Error ? error.message : 'Silakan coba lagi nanti'
       });
-      setError(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
@@ -144,13 +137,13 @@ export default function EditProfilePage() {
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <IconChevronLeft className="w-5 h-5" />
-            <span className="ml-2 text-lg">Back to Settings</span>
+            <span className="ml-2 text-lg">Kembali ke Pengaturan</span>
           </Link>
         </div>
 
         {/* Form Section */}
         <div className="bg-white rounded-3xl p-8 shadow-lg">
-          <h1 className="text-2xl font-semibold mb-6">Edit Profile</h1>
+          <h1 className="text-2xl font-semibold mb-6">Ubah Profil</h1>
           
           {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm">
@@ -160,7 +153,7 @@ export default function EditProfilePage() {
 
           {success && (
             <div className="mb-6 p-4 bg-green-50 text-green-600 rounded-xl text-sm">
-              Profile updated successfully!
+              Profil berhasil diperbarui! Mengalihkan...
             </div>
           )}
           
@@ -168,7 +161,7 @@ export default function EditProfilePage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username
+                  Nama Pengguna
                 </label>
                 <input
                   type="text"
@@ -176,7 +169,7 @@ export default function EditProfilePage() {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your username"
+                  placeholder="Masukkan nama pengguna"
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   3-20 characters, letters, numbers, and underscores only
@@ -184,16 +177,16 @@ export default function EditProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Lengkap
                 </label>
                 <input
                   type="text"
-                  id="full_name"
+                  id="fullName"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your full name"
+                  placeholder="Masukkan nama lengkap"
                 />
               </div>
 
@@ -213,7 +206,7 @@ export default function EditProfilePage() {
 
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
+                  Lokasi
                 </label>
                 <input
                   type="text"
@@ -221,7 +214,7 @@ export default function EditProfilePage() {
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your location"
+                  placeholder="Masukkan lokasi Anda"
                 />
               </div>
 
@@ -235,7 +228,7 @@ export default function EditProfilePage() {
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   rows={4}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Write something about yourself"
+                  placeholder="Ceritakan sedikit tentang dirimu"
                 />
               </div>
             </div>
@@ -247,7 +240,7 @@ export default function EditProfilePage() {
               whileTap={{ scale: 0.98 }}
               className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
             >
-              {isLoading ? 'Saving...' : 'Save Changes'}
+              {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
             </motion.button>
           </form>
         </div>

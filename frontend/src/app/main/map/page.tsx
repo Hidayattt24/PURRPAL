@@ -122,14 +122,13 @@ export default function MapPage() {
               </div>
             </div>
             <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-none tracking-tighter mb-4 sm:mb-6 px-2">
-              Find Veterinary Care with{" "}
+              Direktori Layanan dengan{" "}
               <LineShadowText className="italic" shadowColor={shadowColor}>
                 PurrPal
               </LineShadowText>
             </h1>
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-              Discover trusted veterinary services near you with real-time information and expert care for your beloved
-              pets
+              Temukan layanan dokter hewan terpercaya di sekitar Anda dengan informasi real-time untuk perawatan hewan kesayangan Anda
             </p>
           </motion.div>
         </div>
@@ -151,12 +150,12 @@ export default function MapPage() {
                   <IconMapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-blue-800 text-sm sm:text-base">Location Detected</h3>
+                  <h3 className="font-semibold text-blue-800 text-sm sm:text-base">Lokasi Terdeteksi</h3>
                   <p className="text-xs sm:text-sm text-blue-600">
                     Lat: {userLocation.lat.toFixed(6)}, Lng: {userLocation.lng.toFixed(6)}
                   </p>
                   <p className="text-xs sm:text-sm text-blue-600">
-                    Showing veterinary services sorted by distance from your location
+                    Menampilkan layanan dokter hewan berdasarkan jarak dari lokasi Anda
                   </p>
                 </div>
               </div>
@@ -191,10 +190,10 @@ export default function MapPage() {
               <div className="p-2 sm:p-3 bg-green-100 rounded-xl">
                 <IconStethoscope className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Emergency Care</h3>
+              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Layanan Darurat</h3>
             </div>
             <p className="text-xs sm:text-sm text-gray-600">
-              24/7 emergency veterinary services available at selected clinics with immediate response.
+              Layanan dokter hewan 24/7 tersedia di klinik tertentu dengan respon cepat.
             </p>
           </div>
 
@@ -203,10 +202,10 @@ export default function MapPage() {
               <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
                 <IconClock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Real-time Hours</h3>
+              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Jam Operasional</h3>
             </div>
             <p className="text-xs sm:text-sm text-gray-600">
-              Live operating hours and availability status updated directly from Google Places.
+              Informasi jam buka dan status ketersediaan diperbarui langsung dari Google Places.
             </p>
           </div>
 
@@ -215,10 +214,10 @@ export default function MapPage() {
               <div className="p-2 sm:p-3 bg-purple-100 rounded-xl">
                 <IconStar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Verified Reviews</h3>
+              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Ulasan Terverifikasi</h3>
             </div>
             <p className="text-xs sm:text-sm text-gray-600">
-              Authentic ratings and reviews from verified pet owners and Google users.
+              Rating dan ulasan asli dari pemilik hewan dan pengguna Google yang terverifikasi.
             </p>
           </div>
         </motion.div>
@@ -231,8 +230,8 @@ export default function MapPage() {
           className="mt-6 sm:mt-8 bg-gradient-to-r from-orange-50 to-pink-50 rounded-3xl p-4 sm:p-8 border border-orange-200"
         >
           <div className="text-center mb-4 sm:mb-6">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">How to Use PurrPal Maps</h3>
-            <p className="text-sm sm:text-base text-gray-600">Follow these simple steps to find the best veterinary care</p>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Cara Menggunakan PurrPal Maps</h3>
+            <p className="text-sm sm:text-base text-gray-600">Ikuti langkah-langkah berikut untuk menemukan layanan dokter hewan terbaik</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -240,9 +239,9 @@ export default function MapPage() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold mx-auto mb-3">
                 1
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Enable Location</h4>
+              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Aktifkan Lokasi</h4>
               <p className="text-xs sm:text-sm text-gray-600">
-                Click "Find Nearby Vets" to get your current location and show nearest services.
+                Klik "Cari Dokter Hewan Terdekat" untuk mendapatkan lokasi Anda dan menampilkan layanan terdekat.
               </p>
             </div>
 
@@ -250,9 +249,9 @@ export default function MapPage() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold mx-auto mb-3">
                 2
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Explore Markers</h4>
+              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Jelajahi Penanda</h4>
               <p className="text-xs sm:text-sm text-gray-600">
-                Click on map markers to see detailed information about each veterinary service.
+                Klik penanda di peta untuk melihat informasi detail tentang setiap layanan dokter hewan.
               </p>
             </div>
 
@@ -260,9 +259,9 @@ export default function MapPage() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold mx-auto mb-3">
                 3
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Adjust Search</h4>
+              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Sesuaikan Pencarian</h4>
               <p className="text-xs sm:text-sm text-gray-600">
-                Use the search radius dropdown to adjust the search area (5-20 km).
+                Gunakan dropdown radius pencarian untuk menyesuaikan area pencarian (5-20 km).
               </p>
             </div>
 
@@ -270,9 +269,9 @@ export default function MapPage() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold mx-auto mb-3">
                 4
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Get Directions</h4>
+              <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">Dapatkan Petunjuk Arah</h4>
               <p className="text-xs sm:text-sm text-gray-600">
-                Click "Get Directions" in the info window to open navigation in Google Maps.
+                Klik "Dapatkan Petunjuk Arah" di jendela info untuk membuka navigasi di Google Maps.
               </p>
             </div>
           </div>

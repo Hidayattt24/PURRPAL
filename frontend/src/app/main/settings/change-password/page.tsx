@@ -59,29 +59,29 @@ export default function ChangePasswordPage() {
     try {
       // Basic validation
       if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
-        throw new Error("All fields are required");
+        throw new Error("Semua kolom harus diisi");
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        toast.error("Passwords don't match", {
-          description: "Please make sure your new passwords match"
+        toast.error("Kata sandi tidak cocok", {
+          description: "Pastikan kata sandi baru yang Anda masukkan sama"
         });
         return;
       }
 
       if (formData.newPassword === formData.currentPassword) {
-        throw new Error("New password must be different from current password");
+        throw new Error("Kata sandi baru harus berbeda dengan kata sandi saat ini");
       }
 
       // Password strength validation
       const validation = validatePassword(formData.newPassword);
       if (!validation.isValid) {
         const errors = [];
-        if (validation.errors.length) errors.push("at least 8 characters");
-        if (validation.errors.number) errors.push("at least one number");
-        if (validation.errors.specialChar) errors.push("at least one special character");
+        if (validation.errors.length) errors.push("minimal 8 karakter");
+        if (validation.errors.number) errors.push("minimal satu angka");
+        if (validation.errors.specialChar) errors.push("minimal satu karakter khusus");
         
-        throw new Error(`Password must contain ${errors.join(", ")}`);
+        throw new Error(`Kata sandi harus mengandung ${errors.join(", ")}`);
       }
 
       const token = localStorage.getItem('token');
@@ -106,11 +106,11 @@ export default function ChangePasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to change password');
+        throw new Error(data.error || 'Gagal mengubah kata sandi');
       }
 
-      toast.success('Password changed successfully!', {
-        description: 'Your password has been updated securely.'
+      toast.success('Kata sandi berhasil diubah!', {
+        description: 'Kata sandi Anda telah diperbarui dengan aman.'
       });
 
       setFormData({
@@ -125,8 +125,8 @@ export default function ChangePasswordPage() {
       }, 2000);
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error('Failed to change password', {
-        description: error instanceof Error ? error.message : 'Please check your current password and try again'
+      toast.error('Gagal mengubah kata sandi', {
+        description: error instanceof Error ? error.message : 'Silakan periksa kata sandi saat ini dan coba lagi'
       });
     } finally {
       setIsLoading(false);
@@ -150,13 +150,13 @@ export default function ChangePasswordPage() {
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <IconChevronLeft className="w-5 h-5" />
-            <span className="ml-2 text-lg">Back to Settings</span>
+            <span className="ml-2 text-lg">Kembali ke Pengaturan</span>
           </Link>
         </div>
 
         {/* Form Section */}
         <div className="bg-white rounded-3xl p-8 shadow-lg">
-          <h1 className="text-2xl font-semibold mb-6">Change Password</h1>
+          <h1 className="text-2xl font-semibold mb-6">Ubah Kata Sandi</h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -167,14 +167,14 @@ export default function ChangePasswordPage() {
 
             {success && (
               <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm">
-                Password successfully changed! Redirecting...
+                Kata sandi berhasil diubah! Mengalihkan...
               </div>
             )}
 
             <div className="space-y-4">
               <div>
                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
+                  Kata Sandi Saat Ini
                 </label>
                 <div className="relative">
                   <input
@@ -200,7 +200,7 @@ export default function ChangePasswordPage() {
 
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  Kata Sandi Baru
                 </label>
                 <div className="relative">
                   <input
@@ -226,7 +226,7 @@ export default function ChangePasswordPage() {
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
+                  Konfirmasi Kata Sandi Baru
                 </label>
                 <div className="relative">
                   <input
@@ -261,13 +261,13 @@ export default function ChangePasswordPage() {
             </div>
 
             <motion.button
-              type="submit"
-              disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Changing Password...' : 'Change Password'}
+              {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
             </motion.button>
           </form>
         </div>

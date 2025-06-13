@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { IconChevronLeft, IconMail } from "@tabler/icons-react";
+import { IconChevronLeft, IconMail, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateUserData } from "@/lib/utils/user";
+import { toast } from "sonner";
 
 export default function EditEmailPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     currentEmail: "",
     newEmail: "",
-    password: ""
+    password: "",
+    showPassword: false
   });
 
   const [error, setError] = useState("");
@@ -68,15 +70,16 @@ export default function EditEmailPage() {
     try {
       // Basic validation
       if (!formData.newEmail || !formData.password) {
-        throw new Error("All fields are required");
-      }
-
-      if (!validateEmail(formData.newEmail)) {
-        throw new Error("Please enter a valid email address");
+        throw new Error("Semua kolom harus diisi");
       }
 
       if (formData.newEmail === formData.currentEmail) {
-        throw new Error("New email must be different from current email");
+        throw new Error("Email baru harus berbeda dengan email saat ini");
+      }
+
+      // Email format validation
+      if (!validateEmail(formData.newEmail)) {
+        throw new Error("Format email tidak valid");
       }
 
       const token = localStorage.getItem('token');
@@ -101,13 +104,16 @@ export default function EditEmailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update email');
+        throw new Error(data.error || 'Gagal mengubah email');
       }
 
-      // Update user data in localStorage and trigger update event
-      updateUserData({ email: formData.newEmail });
+      toast.success("Email berhasil diperbarui")
 
-      setSuccess(true);
+      setFormData({
+        currentEmail: formData.newEmail,
+        newEmail: "",
+        password: ""
+      });
 
       // Redirect back to settings after a short delay
       setTimeout(() => {
@@ -115,7 +121,7 @@ export default function EditEmailPage() {
       }, 2000);
     } catch (error) {
       console.error('Error updating email:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update email');
+      toast.error("Gagal memperbarui email")
     } finally {
       setIsLoading(false);
     }
@@ -131,13 +137,13 @@ export default function EditEmailPage() {
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <IconChevronLeft className="w-5 h-5" />
-            <span className="ml-2 text-lg">Back to Settings</span>
+            <span className="ml-2 text-lg">Kembali ke Pengaturan</span>
           </Link>
         </div>
 
         {/* Form Section */}
         <div className="bg-white rounded-3xl p-8 shadow-lg">
-          <h1 className="text-2xl font-semibold mb-6">Change Email Address</h1>
+          <h1 className="text-2xl font-semibold mb-6">Ubah Email</h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -148,24 +154,27 @@ export default function EditEmailPage() {
 
             {success && (
               <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm">
-                Email updated successfully! Redirecting...
+                Email berhasil diubah! Mengalihkan...
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Email
+                <label htmlFor="currentEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Saat Ini
                 </label>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                  <IconMail className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-600">{formData.currentEmail}</span>
-                </div>
+                <input
+                  type="email"
+                  id="currentEmail"
+                  value={formData.currentEmail}
+                  disabled
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500"
+                />
               </div>
 
               <div>
                 <label htmlFor="newEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Email Address
+                  Email Baru
                 </label>
                 <input
                   type="email"
@@ -173,22 +182,35 @@ export default function EditEmailPage() {
                   value={formData.newEmail}
                   onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your new email address"
+                  placeholder="Masukkan email baru Anda"
                 />
               </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
+                  Kata Sandi
                 </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter your current password"
-                />
+                <div className="relative">
+                  <input
+                    type={formData.showPassword ? "text" : "password"}
+                    id="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-12"
+                    placeholder="Masukkan kata sandi Anda"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, showPassword: !formData.showPassword })}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  >
+                    {formData.showPassword ? (
+                      <IconEyeOff className="w-5 h-5" />
+                    ) : (
+                      <IconEye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -202,13 +224,13 @@ export default function EditEmailPage() {
             </div>
 
             <motion.button
-              type="submit"
-              disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-orange-500 text-white rounded-2xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+              type="submit"
+              disabled={isLoading || !formData.newEmail || !formData.password}
+              className="w-full py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Updating Email...' : 'Change Email Address'}
+              {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
             </motion.button>
           </form>
         </div>

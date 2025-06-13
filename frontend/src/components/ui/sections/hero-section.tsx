@@ -59,7 +59,7 @@ export const HeroSection = () => {
             sparklesColor="#FF823C"
           >
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF823C] to-[#C54F0C]">
-              You're not alone. Helping you care for your cat — wherever you are
+              Kamu tidak sendirian. Membantu merawat kucingmu — di mana pun kamu berada
             </span>
           </SparklesText>
         </motion.div>
@@ -69,7 +69,7 @@ export const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-lg md:text-xl text-neutral-600 max-w-3xl mx-auto mb-12 font-poppins font-normal"
         >
-          PurrPal connects cat lovers in remote areas with AI-powered health tools, a caring community, and trusted advice — so every cat gets the love and care it deserves.
+          PurrPal menghubungkan pecinta kucing di daerah terpencil dengan alat kesehatan berbasis AI, komunitas yang peduli, dan saran terpercaya — agar setiap kucing mendapatkan kasih sayang dan perawatan yang layak.
         </motion.p>
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -83,7 +83,7 @@ export const HeroSection = () => {
           >
             <Typewriter
               options={{
-                strings: ["✨ Get Started →"],
+                strings: ["✨ Mulai Sekarang →"],
                 autoStart: true,
                 loop: true,
                 cursor: "|",
