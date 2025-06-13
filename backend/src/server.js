@@ -8,37 +8,43 @@ const modulesRoutes = require('./routes/modules');
 const userRoutes = require('./routes/user');
 const locationRoutes = require('./routes/location');
 const chatbotRoutes = require('./routes/chatbot');
-const aiRoutes = require('./routes/ai'); 
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || 'https://purrpal-frontend-817826973206.asia-southeast2.run.app',
-      'http://localhost:3000'
-    ];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    
-    return callback(null, true);
-  },
-  credentials: true
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            // URL frontend yang baru
+            'https://fe-purrpal.vercel.app',
+            // URL backend lama (backup)
+            process.env.FRONTEND_URL || 'https://purrpal-frontend-817826973206.asia-southeast2.run.app',
+            // Development
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000'
+        ];
+
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+
+        return callback(null, true);
+    },
+    credentials: true
 }));
-app.use(express.json({limit: '50mb'}));
-app.use(express.urlencoded({limit: '50mb', extended: true}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API Documentation route
 app.get('/docs', (req, res) => {
-  const html = `
+    const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -289,30 +295,30 @@ app.get('/docs', (req, res) => {
     </body>
     </html>
   `;
-  res.send(html);
+    res.send(html);
 });
 
 // Default JSON response
 app.get('/', (req, res) => {
-  res.json({
-    name: 'PurrPal API',
-    version: '1.0.0',
-    description: 'Backend API for PurrPal Application',
-    documentation_url: '/docs',
-    endpoints: {
-      auth: '/api/auth',
-      users: '/api/users',
-      stories: '/api/stories',
-      modules: '/api/modules',
-      chatbot: '/api/chatbot',
-      ai: '/api/ai'
-    }
-  });
+    res.json({
+        name: 'PurrPal API',
+        version: '1.0.0',
+        description: 'Backend API for PurrPal Application',
+        documentation_url: '/docs',
+        endpoints: {
+            auth: '/api/auth',
+            users: '/api/users',
+            stories: '/api/stories',
+            modules: '/api/modules',
+            chatbot: '/api/chatbot',
+            ai: '/api/ai'
+        }
+    });
 });
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Routes
@@ -326,11 +332,11 @@ app.use('/api/ai', aiRoutes); // Add AI routes
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API Documentation available at http://localhost:${PORT}/docs`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`API Documentation available at http://localhost:${PORT}/docs`);
 });
