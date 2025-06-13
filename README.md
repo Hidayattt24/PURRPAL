@@ -24,8 +24,8 @@ Proyek ini merupakan bagian dari **Coding Camp 2025** dengan tema **Inovasi Kese
 | **Machine Learning** | `MC322D5Y1068` | Agil Mughni | Universitas Syiah Kuala |
 | **Machine Learning** | `MC322D5Y2203` | Muhammad Khalid Al Ghifari | Universitas Syiah Kuala |
 | **Machine Learning** | `MC322D5Y2301` | Ganang Setyo Hadi | Universitas Syiah Kuala |
-| **Cloud Computing** | `FC322D5Y1088` | Hidayat Nur Hakim | Universitas Syiah Kuala |
-| **Cloud Computing** | `FC322D5Y1122` | Muhammad Ridho | Universitas Syiah Kuala |
+| **Front End Back End** | `FC322D5Y1088` | Hidayat Nur Hakim | Universitas Syiah Kuala |
+| **Front end Back end** | `FC322D5Y1122` | Muhammad Ridho | Universitas Syiah Kuala |
 
 ## 🛠️ Tumpukan Teknologi (Technology Stack)
 
