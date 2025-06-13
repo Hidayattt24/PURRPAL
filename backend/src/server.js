@@ -17,24 +17,55 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
+      // URL frontend yang benar
+      'https://fe-purrpal.vercel.app',
+      // URL backend lama (jika masih digunakan)
       process.env.FRONTEND_URL || 'https://purrpal-frontend-817826973206.asia-southeast2.run.app',
-      'http://localhost:3000'
+      // Development
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      // Vercel preview URLs (untuk testing)
+      /^https:\/\/.*\.vercel\.app$/
     ];
     
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    // Check if origin matches any allowed origin
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (!isAllowed) {
+      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+      console.error('CORS Error:', msg);
       return callback(new Error(msg), false);
     }
     
+    console.log('CORS: Allowing origin:', origin);
     return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
+
+// Additional middleware
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb', extended: true}));
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'No Origin'}`);
+  next();
+});
 
 // API Documentation route
 app.get('/docs', (req, res) => {
@@ -110,12 +141,24 @@ app.get('/docs', (req, res) => {
                 font-size: 0.8em;
                 margin-left: 10px;
             }
+            .cors-info {
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
+                padding: 10px;
+                border-radius: 5px;
+                margin: 10px 0;
+            }
         </style>
     </head>
     <body>
         <div class="header">
             <h1>🐱 PurrPal API Documentation</h1>
-            <p>Base URL: <code>http://localhost:${PORT}</code></p>
+            <p>Base URL: <code>${req.protocol}://${req.get('host')}</code></p>
+        </div>
+
+        <div class="cors-info">
+            <strong>CORS Status:</strong> Configured for frontend at <code>https://fe-purrpal.vercel.app</code>
         </div>
 
         <div class="auth-note">
@@ -299,6 +342,11 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     description: 'Backend API for PurrPal Application',
     documentation_url: '/docs',
+    cors_enabled: true,
+    allowed_origins: [
+      'https://fe-purrpal.vercel.app',
+      'http://localhost:3000'
+    ],
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
@@ -310,9 +358,28 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint with better error handling
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  try {
+    const healthStatus = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cors_configured: true,
+      environment: process.env.NODE_ENV || 'development'
+    };
+    
+    console.log('Health check accessed successfully');
+    res.json(healthStatus);
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Routes
@@ -322,15 +389,64 @@ app.use('/api/modules', modulesRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/chatbot', chatbotRoutes);
-app.use('/api/ai', aiRoutes); // Add AI routes
+app.use('/api/ai', aiRoutes);
 
-// Error handling
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Endpoint not found',
+    message: `The requested endpoint ${req.method} ${req.originalUrl} was not found.`,
+    available_endpoints: [
+      'GET /',
+      'GET /health',
+      'GET /docs',
+      'POST /api/auth/login',
+      'POST /api/auth/signup',
+      'GET /api/stories',
+      'GET /api/modules',
+      'GET /api/users/profile',
+      'POST /api/chatbot/message',
+      'GET /api/ai/health'
+    ]
+  });
+});
+
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    headers: req.headers,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(err.status || 500).json({
+    error: 'Something went wrong!',
+    message: isDevelopment ? err.message : 'Internal server error',
+    timestamp: new Date().toISOString(),
+    ...(isDevelopment && { stack: err.stack })
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API Documentation available at http://localhost:${PORT}/docs`);
+  console.log(`Health check available at http://localhost:${PORT}/health`);
+  console.log(`CORS configured for: https://fe-purrpal.vercel.app`);
 });
