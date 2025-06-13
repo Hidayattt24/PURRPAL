@@ -3,139 +3,80 @@ const path = require('path');
 
 const router = express.Router();
 
-// Chatbot initialization state
+// Import chatbot from the chatbot submodule
 let chatbotInstance = null;
 let initializationError = null;
-let isInitializing = false;
 
-// Safe chatbot initialization with better error handling
+// Initialize chatbot
 async function initializeChatbot() {
-  if (isInitializing) {
-    console.log('🔄 Chatbot initialization already in progress...');
-    return false;
-  }
-
   try {
-    isInitializing = true;
-    console.log('🤖 Starting PurrPal Chatbot initialization...');
+    console.log('🤖 Initializing PurrPal Chatbot...');
     
-    // Try multiple possible paths for chatbot
-    const possiblePaths = [
-      path.resolve(__dirname, '../../chatbot/src/chatbot.js'),
-      path.resolve(__dirname, '../../../chatbot/src/chatbot.js'),
-      path.resolve(__dirname, '../../backend/chatbot/src/chatbot.js')
-    ];
+    // Adjust path to point to chatbot submodule
+    const chatbotPath = path.resolve(__dirname, '../../chatbot/src/chatbot.js');
+    console.log('📁 Chatbot path:', chatbotPath);
     
-    let chatbotModule = null;
-    let successfulPath = null;
+    const { chatbot } = require(chatbotPath);
     
-    for (const chatbotPath of possiblePaths) {
-      try {
-        console.log(`📁 Trying chatbot path: ${chatbotPath}`);
-        
-        // Check if file exists first
-        const fs = require('fs');
-        if (!fs.existsSync(chatbotPath)) {
-          console.log(`❌ File not found: ${chatbotPath}`);
-          continue;
-        }
-        
-        // Try to require the module
-        chatbotModule = require(chatbotPath);
-        successfulPath = chatbotPath;
-        console.log(`✅ Successfully loaded chatbot from: ${chatbotPath}`);
-        break;
-      } catch (pathError) {
-        console.log(`❌ Failed to load from ${chatbotPath}: ${pathError.message}`);
-        continue;
-      }
-    }
-    
-    if (!chatbotModule) {
-      throw new Error('Chatbot module not found in any expected location');
-    }
-    
-    // Extract chatbot instance
-    const { chatbot } = chatbotModule;
-    
-    if (!chatbot) {
-      throw new Error('Chatbot instance not exported from module');
-    }
-    
-    // Initialize if needed
     if (!chatbot.initialized) {
-      console.log('🔄 Initializing chatbot instance...');
+      console.log('🔄 Chatbot not initialized, initializing now...');
       await chatbot.initialize();
     }
     
     chatbotInstance = chatbot;
     initializationError = null;
-    
     console.log('✅ PurrPal Chatbot initialized successfully');
-    console.log(`📍 Loaded from: ${successfulPath}`);
-    
     return true;
   } catch (error) {
     console.error('❌ Failed to initialize chatbot:', error.message);
-    console.error('Full error details:', error);
     initializationError = error;
-    chatbotInstance = null;
     return false;
-  } finally {
-    isInitializing = false;
   }
 }
 
-// Health check endpoint (always available)
+// Initialize chatbot on module load
+initializeChatbot().then(success => {
+  if (success) {
+    console.log('🎉 Chatbot ready to serve requests');
+  } else {
+    console.log('⚠️ Chatbot initialization failed, will retry on first request');
+  }
+});
+
+// Health check endpoint
 router.get('/health', async (req, res) => {
   try {
     console.log('🏥 Chatbot health check requested');
     
-    if (!chatbotInstance && !isInitializing) {
-      console.log('🔄 Chatbot not available, attempting initialization...');
+    // If chatbot not initialized, try to initialize
+    if (!chatbotInstance) {
+      console.log('🔄 Chatbot not found, attempting initialization...');
       const initSuccess = await initializeChatbot();
-      
       if (!initSuccess) {
         return res.status(503).json({
           status: 'unavailable',
-          message: 'Chatbot service is not available',
-          error: initializationError?.message || 'Initialization failed',
+          message: 'Chatbot initialization failed',
+          error: initializationError?.message || 'Unknown error',
           timestamp: new Date().toISOString(),
           suggestions: [
-            'Check chatbot module configuration',
-            'Verify Google Cloud credentials',
-            'Ensure chatbot dependencies are installed'
+            'Check Google Cloud configuration',
+            'Verify service account key',
+            'Ensure Vertex AI API is enabled'
           ]
         });
       }
     }
 
-    if (isInitializing) {
-      return res.status(202).json({
-        status: 'initializing',
-        message: 'Chatbot is currently being initialized',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Perform health check if chatbot is available
-    if (chatbotInstance && typeof chatbotInstance.healthCheck === 'function') {
-      const healthCheck = await chatbotInstance.healthCheck();
-      
-      const statusCode = healthCheck.status === 'healthy' ? 200 : 503;
-      return res.status(statusCode).json({
-        ...healthCheck,
-        backend_integration: 'active',
-        integration_timestamp: new Date().toISOString()
-      });
-    }
+    // Perform health check
+    const healthCheck = await chatbotInstance.healthCheck();
     
-    // Fallback response
-    res.json({
-      status: 'available',
-      message: 'Chatbot instance loaded but health check not implemented',
+    console.log('📊 Health check result:', healthCheck.status);
+    
+    const statusCode = healthCheck.status === 'healthy' ? 200 : 503;
+    res.status(statusCode).json({
+      ...healthCheck,
       backend_integration: 'active',
-      timestamp: new Date().toISOString()
+      integration_timestamp: new Date().toISOString()
     });
     
   } catch (error) {
@@ -144,17 +85,25 @@ router.get('/health', async (req, res) => {
       status: 'error',
       message: 'Health check failed',
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      suggestions: [
+        'Check server logs for details',
+        'Verify chatbot service configuration',
+        'Ensure all dependencies are installed'
+      ]
     });
   }
 });
 
-// Message endpoint
+// Send message to chatbot
 router.post('/message', async (req, res) => {
   try {
     const { message } = req.body;
     
-    console.log('💬 Chatbot message received');
+    console.log('💬 Chatbot message received:', { 
+      messageLength: message?.length,
+      preview: message?.substring(0, 50) + '...'
+    });
     
     // Validate input
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -165,41 +114,31 @@ router.post('/message', async (req, res) => {
       });
     }
 
-    // Check chatbot availability
+    // Check if chatbot is available
     if (!chatbotInstance) {
       console.log('🔄 Chatbot not available, attempting initialization...');
       const initSuccess = await initializeChatbot();
-      
       if (!initSuccess) {
         return res.status(503).json({ 
           success: false,
-          message: 'Layanan chatbot sedang tidak tersedia. Silakan coba lagi nanti.',
+          message: 'Layanan chatbot sedang tidak tersedia. Tim teknis sedang memperbaiki masalah ini.',
           error: 'Chatbot service unavailable',
           timestamp: new Date().toISOString(),
           suggestions: [
-            'Coba lagi dalam beberapa menit',
-            'Refresh halaman dan coba lagi',
-            'Hubungi support jika masalah berlanjut'
+            'Silakan coba lagi dalam beberapa menit',
+            'Jika urgent, hubungi dokter hewan terdekat',
+            'Cek status sistem di halaman utama'
           ]
         });
       }
     }
 
-    if (isInitializing) {
-      return res.status(202).json({
-        success: false,
-        message: 'Chatbot sedang dalam proses inisialisasi. Silakan tunggu sebentar.',
-        error: 'Service initializing',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Generate session ID
+    // Generate session ID (you can use IP or any identifier since no auth)
     const sessionId = req.ip || req.connection.remoteAddress || 'anonymous_' + Date.now();
     
-    console.log('🎯 Generating response...');
+    console.log('🎯 Generating response for session:', sessionId);
     
-    // Generate response
+    // Generate response using real chatbot
     const startTime = Date.now();
     const response = await chatbotInstance.generateResponse(
       message.trim(), 
@@ -208,9 +147,14 @@ router.post('/message', async (req, res) => {
     );
     const responseTime = Date.now() - startTime;
 
-    console.log('✅ Response generated successfully');
+    console.log('✅ Response generated successfully:', {
+      sessionId,
+      responseTime: responseTime + 'ms',
+      urgency: response.urgencyLevel,
+      success: response.success
+    });
 
-    // Add metadata
+    // Add additional metadata
     response.backend_processed = true;
     response.response_time_ms = responseTime;
     response.session_id = sessionId;
@@ -220,61 +164,56 @@ router.post('/message', async (req, res) => {
   } catch (error) {
     console.error('💥 Error in chatbot message processing:', error);
     
+    // Determine error type and provide appropriate response
     let errorResponse = {
       success: false,
-      message: 'Maaf, terjadi kesalahan pada sistem chatbot. Silakan coba lagi.',
+      message: 'Maaf, terjadi kesalahan pada sistem chatbot. Silakan coba lagi dalam beberapa saat.',
       error: 'Internal server error',
       timestamp: new Date().toISOString(),
       suggestions: [
         'Coba kirim pesan lagi',
         'Refresh halaman dan coba lagi',
-        'Hubungi support jika masalah berlanjut'
+        'Jika darurat, segera hubungi dokter hewan terdekat'
       ]
     };
 
-    // Handle specific error types
+    // Check specific error types
     if (error.message.includes('timeout')) {
       errorResponse.message = 'Respons chatbot memerlukan waktu terlalu lama. Silakan coba dengan pertanyaan yang lebih singkat.';
       errorResponse.error = 'Response timeout';
     } else if (error.message.includes('rate limit')) {
       errorResponse.message = 'Terlalu banyak permintaan. Silakan tunggu sebentar sebelum mencoba lagi.';
       errorResponse.error = 'Rate limit exceeded';
+    } else if (error.message.includes('authentication') || error.message.includes('permission')) {
+      errorResponse.message = 'Terjadi masalah konfigurasi sistem. Tim teknis sedang menangani masalah ini.';
+      errorResponse.error = 'Authentication/Permission error';
     }
     
     res.status(500).json(errorResponse);
   }
 });
 
-// History endpoints (with fallback)
+// Get conversation history
 router.get('/history', async (req, res) => {
   try {
     if (!chatbotInstance) {
       return res.status(503).json({ 
         success: false,
-        error: 'Chatbot service is not available',
-        message: 'Riwayat chat tidak tersedia saat ini'
+        error: 'Chatbot service is not available' 
       });
     }
 
     const sessionId = req.ip || req.connection.remoteAddress || 'anonymous';
+    const history = chatbotInstance.getConversationHistory(sessionId);
     
-    if (typeof chatbotInstance.getConversationHistory === 'function') {
-      const history = chatbotInstance.getConversationHistory(sessionId);
-      
-      res.json({
-        success: true,
-        history: history || [],
-        timestamp: new Date().toISOString(),
-        session_id: sessionId
-      });
-    } else {
-      res.json({
-        success: true,
-        history: [],
-        message: 'History feature not implemented',
-        timestamp: new Date().toISOString()
-      });
-    }
+    console.log('📜 Conversation history requested for session:', sessionId);
+    
+    res.json({
+      success: true,
+      history: history || null,
+      timestamp: new Date().toISOString(),
+      session_id: sessionId
+    });
     
   } catch (error) {
     console.error('💥 Error getting conversation history:', error);
@@ -286,6 +225,7 @@ router.get('/history', async (req, res) => {
   }
 });
 
+// Clear conversation history
 router.delete('/history', async (req, res) => {
   try {
     if (!chatbotInstance) {
@@ -296,23 +236,16 @@ router.delete('/history', async (req, res) => {
     }
 
     const sessionId = req.ip || req.connection.remoteAddress || 'anonymous';
+    chatbotInstance.clearConversationHistory(sessionId);
     
-    if (typeof chatbotInstance.clearConversationHistory === 'function') {
-      chatbotInstance.clearConversationHistory(sessionId);
-      
-      res.json({
-        success: true,
-        message: 'Riwayat percakapan telah dihapus',
-        timestamp: new Date().toISOString(),
-        session_id: sessionId
-      });
-    } else {
-      res.json({
-        success: true,
-        message: 'History cleared (feature not fully implemented)',
-        timestamp: new Date().toISOString()
-      });
-    }
+    console.log('🗑️ Conversation history cleared for session:', sessionId);
+    
+    res.json({
+      success: true,
+      message: 'Riwayat percakapan telah dihapus',
+      timestamp: new Date().toISOString(),
+      session_id: sessionId
+    });
     
   } catch (error) {
     console.error('💥 Error clearing conversation history:', error);
@@ -324,42 +257,61 @@ router.delete('/history', async (req, res) => {
   }
 });
 
-// Test endpoint
+// Get chatbot metrics (for monitoring)
+router.get('/metrics', async (req, res) => {
+  try {
+    if (!chatbotInstance) {
+      return res.status(503).json({ 
+        error: 'Chatbot service is not available' 
+      });
+    }
+
+    const metrics = chatbotInstance.getMetrics();
+    
+    res.json({
+      ...metrics,
+      backend_integration: 'active',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('💥 Error getting chatbot metrics:', error);
+    res.status(500).json({ 
+      error: 'Failed to get metrics',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Test endpoint for troubleshooting
 router.get('/test', async (req, res) => {
   try {
     console.log('🧪 Running chatbot test...');
     
-    const testResult = {
-      test: 'chatbot_integration',
-      timestamp: new Date().toISOString(),
-      chatbot_available: !!chatbotInstance,
-      initialization_error: initializationError?.message || null,
-      is_initializing: isInitializing
-    };
-
     if (!chatbotInstance) {
-      testResult.status = 'chatbot_not_available';
-      testResult.message = 'Chatbot instance not loaded';
-    } else {
-      testResult.status = 'chatbot_available';
-      testResult.message = 'Chatbot instance loaded successfully';
-      
-      // Try a simple test if possible
-      try {
-        const testMessage = 'Hello PurrPal Test';
-        const response = await chatbotInstance.generateResponse(testMessage, 'test_session');
-        testResult.test_response = {
-          success: response.success,
-          message_length: response.message?.length || 0
-        };
-      } catch (testError) {
-        testResult.test_response = {
-          error: testError.message
-        };
+      const initSuccess = await initializeChatbot();
+      if (!initSuccess) {
+        return res.status(503).json({
+          test: 'failed',
+          reason: 'Chatbot initialization failed',
+          error: initializationError?.message,
+          timestamp: new Date().toISOString()
+        });
       }
     }
+
+    // Test with a simple message
+    const testMessage = 'Halo PurrPal, ini adalah test';
+    const response = await chatbotInstance.generateResponse(testMessage, 'test_session');
     
-    res.json(testResult);
+    res.json({
+      test: 'success',
+      test_message: testMessage,
+      response_received: response.success,
+      response_length: response.message?.length || 0,
+      chatbot_status: 'working',
+      timestamp: new Date().toISOString()
+    });
     
   } catch (error) {
     console.error('💥 Test failed:', error);
@@ -369,18 +321,6 @@ router.get('/test', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
-});
-
-// Initialize chatbot when module loads (non-blocking)
-console.log('🤖 Chatbot route loaded, starting initialization...');
-initializeChatbot().then(success => {
-  if (success) {
-    console.log('🎉 Chatbot initialized successfully on route load');
-  } else {
-    console.log('⚠️ Chatbot initialization failed on route load, will retry on first request');
-  }
-}).catch(error => {
-  console.error('❌ Chatbot initialization error on route load:', error);
 });
 
 module.exports = router;
